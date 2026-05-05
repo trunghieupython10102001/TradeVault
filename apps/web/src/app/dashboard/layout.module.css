@@ -14,8 +14,13 @@
   background: transparent;
 }
 
+.mainCollapsed {
+  margin-left: calc(var(--sidebar-collapsed) + 36px);
+}
+
 @media (max-width: 768px) {
-  .main {
+  .main,
+  .mainCollapsed {
     margin-left: 0;
     padding-bottom: 16px;
   }

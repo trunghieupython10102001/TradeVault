@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -9,14 +8,15 @@ import {
   BookOpen,
   Calendar,
   Settings,
-  ChevronLeft,
-  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   LogOut,
   Plus,
   List,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useMobileSidebar } from '@/lib/mobile-sidebar-context';
+import { useSidebar } from '@/lib/sidebar-context';
 import styles from './Sidebar.module.css';
 
 const navSections = [
@@ -39,7 +39,7 @@ const navSections = [
 ];
 
 export default function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false);
+  const { collapsed, setCollapsed } = useSidebar();
   const pathname = usePathname();
   const { logout } = useAuth();
   const { isOpen: mobileOpen, close: closeMobile } = useMobileSidebar();
@@ -54,6 +54,8 @@ export default function Sidebar() {
         className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''} ${mobileOpen ? styles.mobileOpen : ''}`}
       >
         <div className={styles.sidebarGlow} />
+
+        {/* Logo */}
         <Link href="/dashboard" className={styles.logo}>
           <div className={styles.logoIcon}>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -68,19 +70,13 @@ export default function Sidebar() {
           {!collapsed && (
             <div className={styles.logoCopy}>
               <span className={styles.logoText}>TradeVault</span>
+              <span className={styles.logoSub}>Pro Dashboard</span>
             </div>
           )}
         </Link>
 
-        <button
-          className={styles.collapseToggle}
-          onClick={() => setCollapsed((c) => !c)}
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-        </button>
-
-        <nav className={styles.nav}>
+        {/* Nav */}
+        <nav className={styles.nav} aria-label="Main navigation">
           {navSections.map((section) => (
             <div key={section.label} className={styles.navSection}>
               {!collapsed && (
@@ -105,8 +101,8 @@ export default function Sidebar() {
                     onClick={closeMobile}
                   >
                     <item.icon size={18} className={styles.navIcon} />
-                    {!collapsed && <span>{item.label}</span>}
-                    <div className={styles.activeIndicator} />
+                    {!collapsed && <span className={styles.navLabel2}>{item.label}</span>}
+                    {isActive && <div className={styles.activeIndicator} />}
                   </Link>
                 );
               })}
@@ -114,6 +110,7 @@ export default function Sidebar() {
           ))}
         </nav>
 
+        {/* Bottom */}
         <div className={styles.bottom}>
           <Link
             href="/dashboard/settings"
@@ -122,16 +119,34 @@ export default function Sidebar() {
             onClick={closeMobile}
           >
             <Settings size={18} className={styles.navIcon} />
-            {!collapsed && <span>Settings</span>}
-            <div className={styles.activeIndicator} />
+            {!collapsed && <span className={styles.navLabel2}>Settings</span>}
+            {pathname === '/dashboard/settings' && <div className={styles.activeIndicator} />}
           </Link>
+
           <button
             className={styles.navItem}
             title={collapsed ? 'Sign out' : undefined}
             onClick={logout}
           >
             <LogOut size={18} className={styles.navIcon} />
-            {!collapsed && <span>Sign Out</span>}
+            {!collapsed && <span className={styles.navLabel2}>Sign Out</span>}
+          </button>
+
+          <div className={styles.divider} />
+
+          <button
+            className={styles.collapseBtn}
+            onClick={() => setCollapsed((c) => !c)}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {collapsed
+              ? <ChevronsRight size={16} className={styles.collapseIcon} />
+              : <>
+                  <ChevronsLeft size={16} className={styles.collapseIcon} />
+                  <span>Collapse</span>
+                </>
+            }
           </button>
         </div>
       </aside>
