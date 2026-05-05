@@ -37,9 +37,14 @@ function isTradingViewSnapshotUrl(url: string): boolean {
 function snapshotToImageUrl(url: string): string {
   const match = url.match(/\/x\/([a-zA-Z0-9]+)/);
   if (match) {
-    return `https://s3.tradingview.com/snapshots/${match[1][0].toLowerCase()}/${match[1]}.png`;
+    const id = match[1];
+    return `https://s3.tradingview.com/snapshots/${id[0].toLowerCase()}/${id}.png`;
   }
   return url;
+}
+
+function isImageUrl(url: string): boolean {
+  return /\.(png|jpg|jpeg|gif|webp|svg)(\?.*)?$/i.test(url);
 }
 
 export default function ImageUpload({ attachments, onChange }: ImageUploadProps) {
@@ -127,12 +132,12 @@ export default function ImageUpload({ attachments, onChange }: ImageUploadProps)
     } else if (isTradingViewChartUrl(url)) {
       onChange([
         ...attachments,
-        { type: 'tradingview', url },
+        { type: 'tradingview', url, caption: 'TradingView Chart' },
       ]);
-    } else if (url.match(/\.(png|jpg|jpeg|gif|webp)(\?.*)?$/i) || url.startsWith('http')) {
+    } else if (url.startsWith('http')) {
       onChange([
         ...attachments,
-        { type: 'image', url },
+        { type: 'image', url, caption: isImageUrl(url) ? undefined : 'Linked image' },
       ]);
     }
     setLinkValue('');
@@ -213,13 +218,23 @@ export default function ImageUpload({ attachments, onChange }: ImageUploadProps)
                   src={att.url}
                   alt={att.caption || 'Trade screenshot'}
                   className={styles.previewImage}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).nextElementSibling?.removeAttribute('hidden');
+                  }}
                 />
+              ) : null}
+              {att.type === 'image' ? (
+                <div className={styles.previewTv} hidden>
+                  <LinkIcon size={20} />
+                  <span className={styles.previewTvLabel}>Image failed to load</span>
+                </div>
               ) : (
-                <div className={styles.previewTv}>
+                <a href={att.url} target="_blank" rel="noopener noreferrer" className={styles.previewTv}>
                   <LinkIcon size={20} />
                   <span className={styles.previewTvIcon}>TradingView</span>
-                  <span className={styles.previewTvLabel}>{att.url}</span>
-                </div>
+                  <span className={styles.previewTvLabel}>{att.caption || att.url}</span>
+                </a>
               )}
             </div>
           ))}

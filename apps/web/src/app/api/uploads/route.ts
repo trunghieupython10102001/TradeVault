@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+import { put } from '@vercel/blob';
 import { randomUUID } from 'crypto';
+import path from 'path';
 
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
 export async function POST(req: NextRequest) {
@@ -23,18 +22,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Only image files are allowed' }, { status: 400 });
     }
 
-    await mkdir(UPLOAD_DIR, { recursive: true });
-
     const ext = path.extname(file.name) || '.png';
-    const filename = `${randomUUID()}${ext}`;
-    const filepath = path.join(UPLOAD_DIR, filename);
+    const filename = `trades/${randomUUID()}${ext}`;
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(filepath, buffer);
+    const blob = await put(filename, file, { access: 'public' });
 
-    const url = `/uploads/${filename}`;
-
-    return NextResponse.json({ url, filename });
+    return NextResponse.json({ url: blob.url });
   } catch (error) {
     console.error('Upload error:', error);
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
