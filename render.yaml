@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: trading-journal-api
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: npm install && npx turbo run build --filter=api... && npx prisma migrate deploy --schema=packages/database/prisma/schema.prisma
+    startCommand: node apps/api/dist/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        sync: false

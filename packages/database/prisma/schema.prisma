@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  name          String?
+  passwordHash  String         @map("password_hash")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  accounts      Account[]
+  trades        Trade[]
+  tags          Tag[]
+  journalEntries JournalEntry[]
+  settings      UserSettings?
+
+  @@map("users")
+}
+
+model UserSettings {
+  id                  String   @id @default(uuid())
+  userId              String   @unique @map("user_id")
+  currency            String   @default("USD")
+  timezone            String   @default("UTC")
+  dateFormat          String   @default("yyyy-MM-dd") @map("date_format")
+  riskPerTrade        Decimal  @default(1) @map("risk_per_trade") @db.Decimal(5, 2)
+  maxDailyLoss        Decimal? @map("max_daily_loss") @db.Decimal(16, 2)
+  maxPositionSize     Decimal? @map("max_position_size") @db.Decimal(16, 2)
+  defaultLeverage     Decimal  @default(1) @map("default_leverage") @db.Decimal(8, 2)
+  startingCapital     Decimal  @default(10000) @map("starting_capital") @db.Decimal(16, 2)
+  weeklyGoal          Decimal? @map("weekly_goal") @db.Decimal(16, 2)
+  monthlyGoal         Decimal? @map("monthly_goal") @db.Decimal(16, 2)
+  defaultCommission   Decimal  @default(0) @map("default_commission") @db.Decimal(16, 2)
+  strategies          String[] @default([])
+  assetClasses        String[] @default([]) @map("asset_classes")
+  journalReminder     Boolean  @default(false) @map("journal_reminder")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+model Account {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  name           String
+  broker         String?
+  initialBalance Decimal  @default(0) @map("initial_balance") @db.Decimal(16, 2)
+  currency       String   @default("USD")
+  isDefault      Boolean  @default(false) @map("is_default")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trades         Trade[]
+
+  @@map("accounts")
+}
+
+enum TradeSide {
+  LONG
+  SHORT
+}
+
+enum TradeStatus {
+  OPEN
+  CLOSED
+}
+
+model Trade {
+  id              String      @id @default(uuid())
+  userId          String      @map("user_id")
+  accountId       String?     @map("account_id")
+  symbol          String
+  side            TradeSide
+  status          TradeStatus @default(OPEN)
+  entryPrice      Decimal     @map("entry_price") @db.Decimal(16, 8)
+  exitPrice       Decimal?    @map("exit_price") @db.Decimal(16, 8)
+  quantity        Decimal     @db.Decimal(16, 8)
+  stopLoss        Decimal?    @map("stop_loss") @db.Decimal(16, 8)
+  takeProfit      Decimal?    @map("take_profit") @db.Decimal(16, 8)
+  commission      Decimal     @default(0) @db.Decimal(16, 2)
+  pnl             Decimal?    @db.Decimal(16, 2)
+  pnlPercent      Decimal?    @map("pnl_percent") @db.Decimal(8, 4)
+  rMultiple       Decimal?    @map("r_multiple") @db.Decimal(8, 4)
+  strategy        String?
+  timeframe       String?
+  rating          Int?        @default(0)
+  notes           String?     @db.Text
+  setupDescription String?    @map("setup_description") @db.Text
+  mistakes        String?     @db.Text
+  lessons         String?     @db.Text
+  entryDate       DateTime    @map("entry_date")
+  exitDate        DateTime?   @map("exit_date")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account         Account?    @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  tags            TradeTag[]
+  images          TradeImage[]
+
+  @@index([userId, entryDate])
+  @@index([symbol])
+  @@index([strategy])
+  @@map("trades")
+}
+
+model Tag {
+  id        String     @id @default(uuid())
+  userId    String     @map("user_id")
+  name      String
+  color     String     @default("#6366f1")
+  createdAt DateTime   @default(now()) @map("created_at")
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trades    TradeTag[]
+
+  @@unique([userId, name])
+  @@map("tags")
+}
+
+model TradeTag {
+  tradeId String @map("trade_id")
+  tagId   String @map("tag_id")
+  trade   Trade  @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  tag     Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([tradeId, tagId])
+  @@map("trade_tags")
+}
+
+model TradeImage {
+  id        String   @id @default(uuid())
+  tradeId   String   @map("trade_id")
+  url       String
+  caption   String?
+  type      String   @default("image")
+  createdAt DateTime @default(now()) @map("created_at")
+  trade     Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  @@map("trade_images")
+}
+
+model JournalEntry {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  entryDate       DateTime @map("entry_date") @db.Date
+  content         String   @db.Text
+  mood            String?
+  confidenceLevel Int?     @map("confidence_level")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, entryDate])
+  @@map("journal_entries")
+}

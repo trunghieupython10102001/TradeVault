@@ -1,0 +1,26 @@
+node_modules
+.env
+.env.local
+
+# Build outputs
+dist
+.next
+packages/database/dist
+
+# Coverage
+coverage
+
+# Local tool config
+.claude
+.opencode
+.turbo
+
+# Local planning/context files
+memory-bank
+*.resolved
+IMPROVEMENT_PLAN.md
+
+# Misc
+.DS_Store
+*.log
+__pycache__

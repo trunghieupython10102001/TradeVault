@@ -1,0 +1,22 @@
+.wrapper {
+  display: flex;
+  min-height: 100vh;
+  background: transparent;
+}
+
+.main {
+  flex: 1;
+  margin-left: calc(var(--sidebar-width) + 36px);
+  min-height: 100vh;
+  transition: margin-left var(--transition-spring);
+  min-width: 0;
+  padding-bottom: 24px;
+  background: transparent;
+}
+
+@media (max-width: 768px) {
+  .main {
+    margin-left: 0;
+    padding-bottom: 16px;
+  }
+}
