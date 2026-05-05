@@ -1,6 +1,0 @@
-{
-  "buildCommand": "npm run build --workspace=trading-journal",
-  "outputDirectory": "apps/web/.next",
-  "installCommand": "npm install",
-  "framework": "nextjs"
-}
