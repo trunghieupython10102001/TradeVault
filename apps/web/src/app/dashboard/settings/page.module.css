@@ -97,10 +97,12 @@
   background: var(--bg-input);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
-  padding: var(--space-3);
+  padding: 0 var(--space-3);
   color: var(--text-primary);
   font-size: var(--text-sm);
   outline: none;
+  min-height: 44px;
+  width: 100%;
   transition: border-color var(--transition-fast);
 }
 
@@ -128,6 +130,10 @@
 .saveBtn:hover {
   background: var(--accent-hover);
   box-shadow: var(--shadow-glow);
+}
+
+.saveBtn:active {
+  transform: scale(0.97);
 }
 
 .addBtn {
