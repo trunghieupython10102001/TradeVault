@@ -4,7 +4,7 @@ services:
     env: node
     region: singapore
     plan: free
-    buildCommand: npm install && npx turbo run build --filter=api... && npx prisma migrate deploy --schema=packages/database/prisma/schema.prisma
+    buildCommand: npm install --include=dev && npm run build --workspace=@repo/database && npm run build --workspace=api && npx prisma migrate deploy --schema=packages/database/prisma/schema.prisma
     startCommand: node apps/api/dist/index.js
     envVars:
       - key: NODE_ENV
