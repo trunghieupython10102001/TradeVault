@@ -25,11 +25,17 @@ export async function POST(req: NextRequest) {
     const ext = path.extname(file.name) || '.png';
     const filename = `trades/${randomUUID()}${ext}`;
 
-    const blob = await put(filename, file, { access: 'public' });
+    // Use ArrayBuffer for reliable streaming to Vercel Blob
+    const arrayBuffer = await file.arrayBuffer();
+    const blob = await put(filename, arrayBuffer, {
+      access: 'public',
+      contentType: file.type,
+    });
 
     return NextResponse.json({ url: blob.url });
   } catch (error) {
     console.error('Upload error:', error);
-    return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Upload failed';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

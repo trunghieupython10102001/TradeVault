@@ -208,3 +208,12 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+.uploadError {
+  padding: var(--space-2) var(--space-3);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-sm);
+  color: #f87171;
+  font-size: var(--text-sm);
+}

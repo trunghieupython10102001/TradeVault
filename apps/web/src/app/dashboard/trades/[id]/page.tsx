@@ -277,23 +277,23 @@ export default function TradeDetailPage() {
               {trade.images.map((img: Record<string, string>, i: number) => {
                 const isTv = img.type === 'tradingview';
                 return isTv ? (
-                  <div key={img.id || i} className={styles.tvEmbed}>
-                    <iframe
-                      src={img.url}
-                      className={styles.tvIframe}
-                      title={`TradingView chart ${i + 1}`}
-                      allowFullScreen
-                      sandbox="allow-scripts allow-same-origin allow-popups"
-                    />
-                    <a
-                      href={img.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={styles.tvLink}
-                    >
-                      Open in TradingView ↗
-                    </a>
-                  </div>
+                  <a
+                    key={img.id || i}
+                    href={img.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.tvEmbed}
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <rect width="24" height="24" rx="4" fill="#2962FF" />
+                      <path d="M5 17l4-8 3 5 2-3 5 6H5z" fill="white" />
+                    </svg>
+                    <div>
+                      <div className={styles.tvLinkTitle}>TradingView Chart</div>
+                      <div className={styles.tvLink}>{img.caption || img.url}</div>
+                    </div>
+                    <span className={styles.tvOpen}>Open ↗</span>
+                  </a>
                 ) : (
                   <div key={img.id || i} className={styles.attachmentItem}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}

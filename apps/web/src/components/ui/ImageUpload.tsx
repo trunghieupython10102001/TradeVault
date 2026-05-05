@@ -51,6 +51,7 @@ export default function ImageUpload({ attachments, onChange }: ImageUploadProps)
   const [dragOver, setDragOver] = useState(false);
   const [linkValue, setLinkValue] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = useCallback(async (files: FileList | File[]) => {
@@ -60,6 +61,7 @@ export default function ImageUpload({ attachments, onChange }: ImageUploadProps)
     if (fileArray.length === 0) return;
 
     setUploading(true);
+    setUploadError(null);
     const newAttachments: TradeAttachment[] = [];
 
     for (const file of fileArray) {
@@ -72,16 +74,19 @@ export default function ImageUpload({ attachments, onChange }: ImageUploadProps)
           body: formData,
         });
 
+        const data = await res.json();
         if (res.ok) {
-          const data = await res.json();
           newAttachments.push({
             type: 'image',
             url: data.url,
             caption: file.name,
           });
+        } else {
+          setUploadError(data.error || 'Upload failed');
         }
       } catch (err) {
         console.error('Upload failed:', err);
+        setUploadError('Upload failed — check your connection');
       }
     }
 
@@ -198,6 +203,13 @@ export default function ImageUpload({ attachments, onChange }: ImageUploadProps)
         <div className={styles.uploading}>
           <div className={styles.uploadSpinner} />
           Uploading...
+        </div>
+      )}
+
+      {/* Upload error */}
+      {uploadError && (
+        <div className={styles.uploadError}>
+          ⚠ {uploadError}
         </div>
       )}
 
