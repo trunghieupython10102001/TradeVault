@@ -154,14 +154,26 @@
 }
 
 .navItem.active {
-  background: linear-gradient(135deg, rgba(124, 140, 255, 0.16), rgba(124, 140, 255, 0.08));
+  background: linear-gradient(135deg, rgba(124, 140, 255, 0.18), rgba(124, 140, 255, 0.07));
   color: #eaf0ff;
   border-color: var(--accent-border);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 10px 30px rgba(40, 56, 122, 0.18);
 }
 
 .activeIndicator {
-  display: none;
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 0 var(--radius-full) var(--radius-full) 0;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.navItem.active .activeIndicator {
+  opacity: 1;
 }
 
 .navIcon {

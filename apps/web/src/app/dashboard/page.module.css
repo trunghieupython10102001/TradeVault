@@ -185,13 +185,13 @@
 }
 
 .metricCard:hover {
-  border-color: var(--border-secondary);
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
+  border-color: rgba(124, 140, 255, 0.28);
+  transform: translateY(-3px);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(124, 140, 255, 0.1);
 }
 
 .metricCard:hover::before {
-  opacity: 0.8;
+  opacity: 1;
 }
 
 /* Color variants for each card */

@@ -113,7 +113,8 @@
   background: var(--bg-input);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
-  padding: var(--space-2) var(--space-3);
+  padding: 0 var(--space-3);
+  height: 40px;
   color: var(--text-tertiary);
   transition: border-color var(--transition-fast);
 }
@@ -140,9 +141,11 @@
   background: var(--bg-input);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
-  padding: var(--space-2) var(--space-3);
+  padding: 0 var(--space-3);
+  height: 40px;
   color: var(--text-secondary);
   font-size: var(--text-sm);
+  font-family: inherit;
   cursor: pointer;
   outline: none;
   transition: border-color var(--transition-fast);
@@ -150,6 +153,7 @@
 
 .filterSelect:focus {
   border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-muted);
 }
 
 .toolbarRight {
@@ -162,7 +166,8 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
+  padding: 0 var(--space-4);
+  height: 40px;
   background: var(--bg-input);
   color: var(--text-secondary);
   border: 1px solid var(--border-primary);
@@ -172,18 +177,25 @@
   cursor: pointer;
   transition: all var(--transition-fast);
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .importBtn:hover {
   border-color: var(--accent);
   color: var(--accent);
+  background: var(--accent-muted);
+}
+
+.importBtn:active {
+  transform: scale(0.97);
 }
 
 .exportBtn {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
+  padding: 0 var(--space-4);
+  height: 40px;
   background: var(--bg-input);
   color: var(--text-secondary);
   border: 1px solid var(--border-primary);
@@ -193,11 +205,17 @@
   cursor: pointer;
   transition: all var(--transition-fast);
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .exportBtn:hover {
-  border-color: #10b981;
-  color: #10b981;
+  border-color: var(--green);
+  color: var(--green);
+  background: var(--green-bg);
+}
+
+.exportBtn:active {
+  transform: scale(0.97);
 }
 
 .exportBtn:disabled {
@@ -209,7 +227,8 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
+  padding: 0 var(--space-5);
+  height: 40px;
   background: var(--accent);
   color: white;
   border: none;
@@ -219,13 +238,17 @@
   cursor: pointer;
   transition: all var(--transition-fast);
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .addBtn:hover {
   background: var(--accent-hover);
   box-shadow: var(--shadow-glow);
   color: white;
-  transform: translateY(-1px);
+}
+
+.addBtn:active {
+  transform: scale(0.97);
 }
 
 /* Table */
@@ -245,31 +268,48 @@
   text-align: left;
   padding: var(--space-3) var(--space-4);
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-tertiary);
-  background: var(--bg-secondary);
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  background: rgba(7, 11, 22, 0.6);
   border-bottom: 1px solid var(--border-primary);
   white-space: nowrap;
   user-select: none;
 }
 
 .table td {
-  padding: var(--space-3) var(--space-4);
+  padding: 14px var(--space-4);
   font-size: var(--text-sm);
   color: var(--text-secondary);
-  border-bottom: 1px solid var(--border-primary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   white-space: nowrap;
 }
 
 .row {
-  transition: background var(--transition-fast);
+  transition: background var(--transition-fast), box-shadow var(--transition-fast);
   cursor: pointer;
+  position: relative;
+}
+
+.row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
 }
 
 .row:hover {
-  background: var(--bg-card-hover);
+  background: rgba(124, 140, 255, 0.04);
+}
+
+.row:hover::before {
+  opacity: 1;
 }
 
 .row:last-child td {
