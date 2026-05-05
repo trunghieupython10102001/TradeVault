@@ -49,6 +49,12 @@
   flex-shrink: 0;
   position: relative;
   z-index: 1;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.logo:hover .logoText {
+  color: var(--accent);
 }
 
 .logoIcon {
@@ -175,25 +181,31 @@
   z-index: 1;
 }
 
-.collapseBtn {
+/* Collapse toggle — pinned to right edge of sidebar, vertically centered */
+.collapseToggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: 12px 14px;
-  border-radius: 16px;
-  color: var(--text-muted);
-  font-size: var(--text-sm);
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.03);
+  justify-content: center;
   cursor: pointer;
+  color: var(--text-muted);
   transition: all var(--transition-fast);
-  white-space: nowrap;
-  width: 100%;
+  z-index: 2;
+  flex-shrink: 0;
 }
 
-.collapseBtn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-secondary);
+.collapseToggle:hover {
+  background: rgba(124, 140, 255, 0.12);
+  border-color: var(--accent-border);
+  color: var(--accent);
 }
 
 /* ===== Mobile backdrop ===== */
@@ -231,7 +243,7 @@
     display: block;
   }
 
-  .collapseBtn {
+  .collapseToggle {
     display: none;
   }
 }

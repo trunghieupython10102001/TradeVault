@@ -10,9 +10,6 @@
   background: rgba(11, 17, 32, 0.72);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  position: sticky;
-  top: 18px;
-  z-index: 50;
   box-shadow: var(--shadow-sm);
 }
 

@@ -54,7 +54,7 @@ export default function Sidebar() {
         className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''} ${mobileOpen ? styles.mobileOpen : ''}`}
       >
         <div className={styles.sidebarGlow} />
-        <div className={styles.logo}>
+        <Link href="/dashboard" className={styles.logo}>
           <div className={styles.logoIcon}>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <line x1="5.5" y1="1.5" x2="5.5" y2="4" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
@@ -70,7 +70,15 @@ export default function Sidebar() {
               <span className={styles.logoText}>TradeVault</span>
             </div>
           )}
-        </div>
+        </Link>
+
+        <button
+          className={styles.collapseToggle}
+          onClick={() => setCollapsed((c) => !c)}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+        </button>
 
         <nav className={styles.nav}>
           {navSections.map((section) => (
@@ -117,14 +125,6 @@ export default function Sidebar() {
             {!collapsed && <span>Settings</span>}
             <div className={styles.activeIndicator} />
           </Link>
-          <button
-            className={styles.collapseBtn}
-            onClick={() => setCollapsed((c) => !c)}
-            title={collapsed ? 'Expand' : 'Collapse'}
-          >
-            {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-            {!collapsed && <span>Collapse</span>}
-          </button>
           <button
             className={styles.navItem}
             title={collapsed ? 'Sign out' : undefined}
