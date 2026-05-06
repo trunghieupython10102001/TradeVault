@@ -68,6 +68,7 @@
   font-size: var(--text-base);
   font-weight: 600;
   color: var(--text-primary);
+  margin: 0;
 }
 
 .cardMeta {
@@ -83,17 +84,241 @@
   gap: var(--space-5);
 }
 
-/* Drawdown Chart */
-.drawdownChart {
-  margin-top: var(--space-2);
+/* ===== Statistics Grid ===== */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
 }
+
+.statsGrid2Col {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.statTile {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  transition: border-color var(--transition-fast);
+}
+
+.statTile:hover {
+  border-color: var(--border-secondary);
+}
+
+.statTileLabel {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.statTileValue {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  line-height: 1.2;
+}
+
+.statTileValue.positive { color: var(--green); }
+.statTileValue.negative { color: var(--red); }
+.statTileValue.warn { color: #f59e0b; }
+
+/* ===== Drawdown Chart ===== */
+.drawdownChart { margin-top: var(--space-2); }
 
 .chartSvg {
   width: 100%;
   height: auto;
 }
 
-/* Strategy List */
+/* ===== Session Table ===== */
+.sessionTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.sessionTable th {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 0 var(--space-3) var(--space-3);
+  text-align: left;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.sessionTable th:not(:first-child) { text-align: right; }
+
+.sessionRow td {
+  padding: var(--space-3) var(--space-3);
+  font-size: var(--text-sm);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.sessionRow:last-child td { border-bottom: none; }
+
+.sessionRow:hover td { background: rgba(255,255,255,0.025); }
+
+.sessionBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sessionDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sessionCell {
+  text-align: right;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.sessionCellPnl {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.sessionBar {
+  margin-top: 3px;
+  height: 3px;
+  border-radius: 99px;
+  background: var(--bg-tertiary);
+  overflow: hidden;
+  max-width: 80px;
+  margin-left: auto;
+}
+
+.sessionBarFill {
+  height: 100%;
+  border-radius: 99px;
+}
+
+/* ===== Hour Chart ===== */
+.hourChart {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 120px;
+  padding-bottom: var(--space-5);
+  position: relative;
+}
+
+.hourBarWrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+  position: relative;
+  cursor: default;
+}
+
+.hourBarWrap:hover .hourTooltip {
+  opacity: 1;
+  transform: translateY(-4px);
+  pointer-events: auto;
+}
+
+.hourBarOuter {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  border-radius: 3px 3px 0 0;
+  overflow: hidden;
+}
+
+.hourBar {
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+  transition: opacity var(--transition-fast);
+  min-height: 2px;
+}
+
+.hourBarWrap:hover .hourBar {
+  opacity: 0.85;
+}
+
+.hourLabel {
+  font-size: 9px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  position: absolute;
+  bottom: -18px;
+}
+
+.hourTooltip {
+  position: absolute;
+  top: -56px;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  padding: 6px 10px;
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+  z-index: 10;
+  box-shadow: var(--shadow-md);
+}
+
+.hourTooltipRow {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: space-between;
+  color: var(--text-secondary);
+}
+
+.hourTooltipRow strong {
+  color: var(--text-primary);
+}
+
+.hourLegend {
+  display: flex;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-primary);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+.hourLegendItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.hourLegendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+/* ===== Strategy List ===== */
 .strategyList {
   display: flex;
   flex-direction: column;
@@ -164,15 +389,10 @@
   transition: width 0.6s ease;
 }
 
-.barGreen {
-  background: var(--green);
-}
+.barGreen { background: var(--green); }
+.barRed { background: var(--red); }
 
-.barRed {
-  background: var(--red);
-}
-
-/* Day List */
+/* ===== Day List ===== */
 .dayList {
   display: flex;
   flex-direction: column;
@@ -188,9 +408,7 @@
   transition: background var(--transition-fast);
 }
 
-.dayRow:hover {
-  background: var(--bg-tertiary);
-}
+.dayRow:hover { background: var(--bg-tertiary); }
 
 .dayInfo {
   display: flex;
@@ -227,7 +445,7 @@
   font-family: var(--font-mono);
 }
 
-/* Symbol Grid */
+/* ===== Symbol Grid ===== */
 .symbolGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -315,9 +533,7 @@
   animation: spin 0.8s linear infinite;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .emptyState {
   display: flex;
@@ -335,18 +551,16 @@
   color: var(--text-secondary);
 }
 
-.emptyState p {
-  font-size: var(--text-sm);
-}
+.emptyState p { font-size: var(--text-sm); }
 
 @media (max-width: 1200px) {
-  .symbolGrid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .symbolGrid { grid-template-columns: repeat(2, 1fr); }
+  .statsGrid { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 768px) {
   .page { padding: var(--space-4); }
   .grid2 { grid-template-columns: 1fr; }
   .symbolGrid { grid-template-columns: 1fr; }
+  .statsGrid { grid-template-columns: repeat(2, 1fr); }
 }
