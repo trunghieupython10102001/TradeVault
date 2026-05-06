@@ -395,7 +395,8 @@ router.post('/import', async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const imported: string[] = [];
+    const created: string[] = [];
+    const updated: string[] = [];
     const skipped: { row: number; reason: string }[] = [];
 
     for (let i = 0; i < rows.length; i++) {
@@ -455,29 +456,40 @@ router.post('/import', async (req: AuthRequest, res: Response) => {
           : null;
         const rMultiple = (rMultipleRaw != null && Math.abs(rMultipleRaw) < 9999) ? rMultipleRaw : null;
 
-        await prisma.trade.create({
-          data: {
-            userId,
-            accountId,
-            symbol,
-            side: side as any,
-            status: hasExit ? 'CLOSED' : 'OPEN',
-            entryPrice,
-            exitPrice: tradeForCalc.exitPrice,
-            quantity: volume,
-            stopLoss: sl > 0 ? sl : null,
-            takeProfit: tp > 0 ? tp : null,
-            commission: totalCommission,
-            pnl,
-            pnlPercent: null,
-            rMultiple,
-            notes: ticket ? `Broker ticket: ${ticket}` : null,
-            entryDate,
-            exitDate,
-          },
-        });
+        const tradeData = {
+          accountId,
+          symbol,
+          side: side as any,
+          status: hasExit ? 'CLOSED' : 'OPEN',
+          entryPrice,
+          exitPrice: tradeForCalc.exitPrice,
+          quantity: volume,
+          stopLoss: sl > 0 ? sl : null,
+          takeProfit: tp > 0 ? tp : null,
+          commission: totalCommission,
+          pnl,
+          pnlPercent: null,
+          rMultiple,
+          entryDate,
+          exitDate,
+        };
 
-        imported.push(ticket || `row-${rowNum}`);
+        if (ticket) {
+          const existing = await prisma.trade.findUnique({
+            where: { unique_user_broker_ticket: { userId, brokerTicketId: ticket } },
+            select: { id: true },
+          });
+          await prisma.trade.upsert({
+            where: { unique_user_broker_ticket: { userId, brokerTicketId: ticket } },
+            update: tradeData,
+            create: { userId, brokerTicketId: ticket, ...tradeData },
+          });
+          if (existing) updated.push(ticket);
+          else created.push(ticket);
+        } else {
+          await prisma.trade.create({ data: { userId, ...tradeData } });
+          created.push(`row-${rowNum}`);
+        }
       } catch (err: any) {
         skipped.push({ row: rowNum, reason: err.message || 'Unknown error' });
       }
@@ -485,7 +497,9 @@ router.post('/import', async (req: AuthRequest, res: Response) => {
 
     res.json({
       success: true,
-      imported: imported.length,
+      imported: created.length + updated.length,
+      created: created.length,
+      updated: updated.length,
       skipped: skipped.length,
       skippedDetails: skipped,
     });

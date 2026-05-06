@@ -92,6 +92,7 @@ model Trade {
   strategy        String?
   timeframe       String?
   rating          Int?        @default(0)
+  brokerTicketId  String?     @map("broker_ticket_id")
   notes           String?     @db.Text
   setupDescription String?    @map("setup_description") @db.Text
   mistakes        String?     @db.Text
@@ -106,6 +107,7 @@ model Trade {
   tags            TradeTag[]
   images          TradeImage[]
 
+  @@unique([userId, brokerTicketId], name: "unique_user_broker_ticket")
   @@index([userId, entryDate])
   @@index([symbol])
   @@index([strategy])

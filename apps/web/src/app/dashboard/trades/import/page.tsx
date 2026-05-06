@@ -16,6 +16,8 @@ interface SkippedRow {
 interface ImportResult {
   success: boolean;
   imported: number;
+  created: number;
+  updated: number;
   skipped: number;
   skippedDetails: SkippedRow[];
 }
@@ -211,8 +213,13 @@ export default function ImportTradesPage() {
             </div>
             <div className={styles.resultStats}>
               <div className={styles.statItem}>
-                <span className={styles.statValue}>{result.imported}</span>
-                <span className={styles.statLabel}>Imported</span>
+                <span className={styles.statValue}>{result.created}</span>
+                <span className={styles.statLabel}>New</span>
+              </div>
+              <div className={styles.statDivider} />
+              <div className={styles.statItem}>
+                <span className={styles.statValue}>{result.updated}</span>
+                <span className={styles.statLabel}>Updated</span>
               </div>
               <div className={styles.statDivider} />
               <div className={styles.statItem}>
