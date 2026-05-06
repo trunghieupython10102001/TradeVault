@@ -148,13 +148,23 @@ export function calculateMetrics(
   const lossRate = losses.length / totalTrades;
   const expectancy = (winRate / 100) * avgWin - lossRate * avgLoss;
 
-  // Sharpe Ratio — per-trade, no annualization (matches broker platform conventions)
+  // Sharpe Ratio — daily grouping, no annualization (matches FTMO/broker platform)
   let sharpeRatio: number | null = null;
-  if (totalTrades > 1) {
-    const variance =
-      pnls.reduce((acc, p) => acc + Math.pow(p - avgPnl, 2), 0) / (totalTrades - 1);
-    const stdDev = Math.sqrt(variance);
-    sharpeRatio = stdDev > 0 ? avgPnl / stdDev : null;
+  const dailyPnlMap: Record<string, number> = {};
+  for (const trade of trades) {
+    if (trade.exitDate) {
+      const d = trade.exitDate instanceof Date
+        ? trade.exitDate.toISOString().slice(0, 10)
+        : String(trade.exitDate).slice(0, 10);
+      dailyPnlMap[d] = (dailyPnlMap[d] || 0) + toNum(trade.pnl);
+    }
+  }
+  const dailyValues = Object.values(dailyPnlMap);
+  if (dailyValues.length > 1) {
+    const dMean = dailyValues.reduce((a, b) => a + b, 0) / dailyValues.length;
+    const dVariance = dailyValues.reduce((acc, d) => acc + Math.pow(d - dMean, 2), 0) / (dailyValues.length - 1);
+    const dStdDev = Math.sqrt(dVariance);
+    sharpeRatio = dStdDev > 0 ? dMean / dStdDev : null;
   }
 
   return {
