@@ -276,6 +276,7 @@ export default function Dashboard() {
                     contentStyle={{ backgroundColor: '#0e1628', border: '1px solid rgba(124,140,255,0.18)', borderRadius: '10px', fontSize: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}
                     itemStyle={{ color: '#f5f7ff' }}
                     labelStyle={{ color: '#7182ab', marginBottom: '4px', fontSize: '11px' }}
+                    formatter={(v: number) => [`$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Equity']}
                   />
                   <Area
                     type="monotone"
