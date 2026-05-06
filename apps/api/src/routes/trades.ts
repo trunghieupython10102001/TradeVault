@@ -348,7 +348,7 @@ router.put('/:id', handleTradeUpdate);
 router.post('/import', async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId!;
-    const { csv } = req.body as { csv: string };
+    const { csv, startingBalance } = req.body as { csv: string; startingBalance?: number };
 
     if (!csv || typeof csv !== 'string') {
       res.status(400).json({ error: 'CSV content is required' });
@@ -372,6 +372,28 @@ router.post('/import', async (req: AuthRequest, res: Response) => {
       });
     }
     const accountId = account.id;
+
+    // Determine initial balance: explicit override > auto-detect from Balance column > keep existing
+    let resolvedInitialBalance: number | null = null;
+    if (startingBalance && startingBalance > 0) {
+      resolvedInitialBalance = startingBalance;
+    } else if (rows[0]) {
+      // Auto-detect: Balance column minus first trade's PnL components = balance before first trade
+      const balanceCol = parseFloat(rows[0]['Balance'] || '0');
+      const firstProfit = parseFloat(rows[0]['Profit'] || '0');
+      const firstSwap = parseFloat(rows[0]['Swap'] || '0');
+      const firstComm = parseFloat(rows[0]['Commissions'] || '0');
+      if (balanceCol > 0) {
+        resolvedInitialBalance = balanceCol - firstProfit - firstSwap - firstComm;
+      }
+    }
+
+    if (resolvedInitialBalance !== null && resolvedInitialBalance > 0) {
+      await prisma.account.update({
+        where: { id: accountId },
+        data: { initialBalance: resolvedInitialBalance },
+      });
+    }
 
     const imported: string[] = [];
     const skipped: { row: number; reason: string }[] = [];

@@ -26,6 +26,7 @@ export default function ImportTradesPage() {
   const [dragging, setDragging] = useState(false);
   const [fileName, setFileName] = useState('');
   const [csvContent, setCsvContent] = useState('');
+  const [startingBalance, setStartingBalance] = useState('');
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState('');
@@ -74,7 +75,10 @@ export default function ImportTradesPage() {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ csv: csvContent }),
+        body: JSON.stringify({
+          csv: csvContent,
+          startingBalance: startingBalance ? parseFloat(startingBalance) : undefined,
+        }),
       });
 
       const data = await res.json();
@@ -97,6 +101,7 @@ export default function ImportTradesPage() {
     setCsvContent('');
     setResult(null);
     setError('');
+    setStartingBalance('');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -128,6 +133,30 @@ export default function ImportTradesPage() {
             ].map((col) => (
               <span key={col} className={styles.colBadge}>{col}</span>
             ))}
+          </div>
+        </div>
+
+        <div className={styles.balanceSection}>
+          <label className={styles.balanceLabel} htmlFor="starting-balance">
+            Starting Account Balance
+            <span className={styles.balanceOptional}> — optional</span>
+          </label>
+          <p className={styles.balanceHint}>
+            For FTMO and other prop-firm accounts, enter the account size (e.g. 10000, 25000, 100000).
+            If your CSV has a Balance column this is detected automatically — use this to override.
+          </p>
+          <div className={styles.balanceInputRow}>
+            <span className={styles.balanceCurrency}>$</span>
+            <input
+              id="starting-balance"
+              type="number"
+              min="0"
+              step="any"
+              placeholder="e.g. 100000"
+              className={styles.balanceInput}
+              value={startingBalance}
+              onChange={(e) => setStartingBalance(e.target.value)}
+            />
           </div>
         </div>
 

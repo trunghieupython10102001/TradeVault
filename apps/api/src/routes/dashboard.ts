@@ -24,6 +24,13 @@ router.get('/', async (req: AuthRequest, res: Response) => {
       take: 5,
     });
 
+    // Fetch default account for initial balance
+    const account = await prisma.account.findFirst({
+      where: { userId, isDefault: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    const initialBalance = Number(account?.initialBalance ?? 0);
+
     // Pass exitDate to calculateMetrics for proper daily-return Sharpe
     const metrics = calculateMetrics(
       trades.map((t: any) => ({
@@ -33,8 +40,8 @@ router.get('/', async (req: AuthRequest, res: Response) => {
       }))
     );
 
-    // Equity Curve (cumulative PnL)
-    let cumulativePnl = 0;
+    // Equity Curve (cumulative PnL starting from initial account balance)
+    let cumulativePnl = initialBalance;
     const equityCurve = trades.map((t: any) => {
       cumulativePnl += Number(t.pnl);
       return {
