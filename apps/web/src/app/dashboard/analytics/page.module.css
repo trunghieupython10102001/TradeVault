@@ -133,12 +133,10 @@
 .statTileValue.negative { color: var(--red); }
 .statTileValue.warn { color: #f59e0b; }
 
-/* ===== Drawdown Chart ===== */
-.drawdownChart { margin-top: var(--space-2); }
-
-.chartSvg {
-  width: 100%;
-  height: auto;
+/* ===== Equity Chart ===== */
+.equityChart {
+  height: 220px;
+  margin-top: var(--space-2);
 }
 
 /* ===== Session Table ===== */

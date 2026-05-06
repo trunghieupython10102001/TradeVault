@@ -12,6 +12,10 @@ import {
   Globe,
   Activity,
 } from 'lucide-react';
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer,
+} from 'recharts';
 import Topbar from '@/components/layout/Topbar';
 import { apiFetch } from '@/lib/api';
 import { formatCurrency, formatNumber } from '@/lib/calculations';
@@ -54,8 +58,11 @@ interface DayRow { day: string; trades: number; winRate: number; pnl: number }
 interface SessionRow { session: string; trades: number; winRate: number; pnl: number; lots: number }
 interface HourRow { hour: number; trades: number; winRate: number; pnl: number }
 
+interface EquityPoint { date: string; equity: number }
+
 interface AnalyticsData {
   stats: Stats;
+  equityCurve: EquityPoint[];
   byStrategy: StrategyRow[];
   bySymbol: SymbolRow[];
   byDay: DayRow[];
@@ -93,7 +100,6 @@ export default function AnalyticsPage() {
 
   const maxStratPnl = data ? Math.max(...data.byStrategy.map((s) => Math.abs(s.pnl)), 1) : 1;
   const maxSymPnl = data ? Math.max(...data.bySymbol.map((s) => Math.abs(s.pnl)), 1) : 1;
-  const maxDD = data && data.drawdown.length > 0 ? Math.max(...data.drawdown.map(Math.abs), 0.001) : 0.001;
   const maxSessionPnl = data ? Math.max(...data.bySession.map((s) => Math.abs(s.pnl)), 1) : 1;
 
   // For hour chart — normalize bar heights
@@ -221,38 +227,47 @@ export default function AnalyticsPage() {
               </div>
             </div>
 
-            {/* ===== Drawdown Chart ===== */}
+            {/* ===== Equity Curve ===== */}
             <div className={styles.card}>
               <div className={styles.cardHeader}>
-                <h3 className={styles.cardTitle}><TrendingUp size={18} /> Drawdown</h3>
-                <span className={styles.cardMeta}>Max: {fmt(data.maxDrawdown, 2)}%</span>
+                <h3 className={styles.cardTitle}><TrendingUp size={18} /> Equity Curve</h3>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>
+                  Max drawdown: <span style={{ color: 'var(--red)', fontWeight: 600 }}>{fmt(data.maxDrawdown, 2)}%</span>
+                </span>
               </div>
-              <div className={styles.drawdownChart}>
-                <svg viewBox="0 0 400 100" className={styles.chartSvg}>
-                  <defs>
-                    <linearGradient id="ddGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--red)" stopOpacity="0" />
-                      <stop offset="100%" stopColor="var(--red)" stopOpacity="0.3" />
-                    </linearGradient>
-                  </defs>
-                  <line x1="10" y1="10" x2="390" y2="10" stroke="var(--border-secondary)" strokeWidth="0.5" strokeDasharray="4" />
-                  {data.drawdown.length > 1 && (
-                    <>
-                      <path
-                        d={`M 10,10 ${data.drawdown.map((d, i) =>
-                          `L ${10 + (i / (data.drawdown.length - 1)) * 380},${10 + (Math.abs(d) / maxDD) * 80}`
-                        ).join(' ')} L 390,10 Z`}
-                        fill="url(#ddGrad)"
-                      />
-                      <polyline
-                        points={data.drawdown.map((d, i) =>
-                          `${10 + (i / (data.drawdown.length - 1)) * 380},${10 + (Math.abs(d) / maxDD) * 80}`
-                        ).join(' ')}
-                        fill="none" stroke="var(--red)" strokeWidth="2" strokeLinejoin="round"
-                      />
-                    </>
-                  )}
-                </svg>
+              <div className={styles.equityChart}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={data.equityCurve} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="analyticsEquity" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+                    <XAxis
+                      dataKey="date" stroke="transparent" fontSize={11} tickLine={false}
+                      axisLine={false} tick={{ fill: '#556582' }}
+                      interval={Math.floor(data.equityCurve.length / 6)}
+                    />
+                    <YAxis
+                      stroke="transparent" fontSize={11} tickLine={false} axisLine={false}
+                      tick={{ fill: '#556582' }} domain={['auto', 'auto']}
+                      tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} width={44}
+                    />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#0e1628', border: '1px solid rgba(124,140,255,0.18)', borderRadius: '10px', fontSize: '12px' }}
+                      itemStyle={{ color: '#f5f7ff' }}
+                      labelStyle={{ color: '#7182ab', marginBottom: '4px', fontSize: '11px' }}
+                      formatter={(v: number) => [`$${v.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, 'Equity']}
+                    />
+                    <Area
+                      type="monotone" dataKey="equity" stroke="#6366f1" strokeWidth={2}
+                      fillOpacity={1} fill="url(#analyticsEquity)" dot={false}
+                      activeDot={{ r: 4, fill: '#818cf8', strokeWidth: 0 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             </div>
 

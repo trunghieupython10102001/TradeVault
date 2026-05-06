@@ -83,7 +83,8 @@ export function calculateMetrics(
     pnl: DecimalLike | number | null;
     rMultiple?: DecimalLike | number | null;
     exitDate?: Date | string | null;
-  }>
+  }>,
+  initialBalance = 0
 ): PerformanceMetrics {
   const pnls = trades.map((t) => toNum(t.pnl)).filter((p) => p !== 0 || trades.length > 0);
   const totalTrades = pnls.length;
@@ -122,10 +123,10 @@ export function calculateMetrics(
   const grossLoss = Math.abs(losses.reduce((a, b) => a + b, 0));
   const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0;
 
-  // Max drawdown
-  let peak = 0;
+  // Max drawdown — computed from actual equity level (initialBalance + cumulative PnL)
+  let peak = initialBalance;
   let maxDD = 0;
-  let running = 0;
+  let running = initialBalance;
   for (const pnl of pnls) {
     running += pnl;
     if (running > peak) peak = running;
@@ -147,36 +148,13 @@ export function calculateMetrics(
   const lossRate = losses.length / totalTrades;
   const expectancy = (winRate / 100) * avgWin - lossRate * avgLoss;
 
-  // Sharpe Ratio — daily-return-based (proper method)
+  // Sharpe Ratio — per-trade, no annualization (matches broker platform conventions)
   let sharpeRatio: number | null = null;
-
-  // Group P&L by exit date for daily returns
-  const dailyPnlMap: Record<string, number> = {};
-  for (const trade of trades) {
-    if (trade.exitDate) {
-      const d = trade.exitDate instanceof Date
-        ? trade.exitDate.toISOString().slice(0, 10)
-        : String(trade.exitDate).slice(0, 10);
-      dailyPnlMap[d] = (dailyPnlMap[d] || 0) + toNum(trade.pnl);
-    }
-  }
-  const dailyValues = Object.values(dailyPnlMap);
-
-  if (dailyValues.length >= 20) {
-    // Use daily P&L series for Sharpe (no risk-free rate assumption)
-    const dMean = dailyValues.reduce((a, b) => a + b, 0) / dailyValues.length;
-    const dVariance =
-      dailyValues.reduce((acc, d) => acc + Math.pow(d - dMean, 2), 0) /
-      (dailyValues.length - 1);
-    const dStdDev = Math.sqrt(dVariance);
-    sharpeRatio = dStdDev > 0 ? (dMean / dStdDev) * Math.sqrt(252) : null;
-  } else if (totalTrades > 1) {
-    // Fallback to per-trade for small datasets (< 20 trading days)
-    const mean = avgPnl;
+  if (totalTrades > 1) {
     const variance =
-      pnls.reduce((acc, p) => acc + Math.pow(p - mean, 2), 0) / (totalTrades - 1);
+      pnls.reduce((acc, p) => acc + Math.pow(p - avgPnl, 2), 0) / (totalTrades - 1);
     const stdDev = Math.sqrt(variance);
-    sharpeRatio = stdDev > 0 ? (mean / stdDev) * Math.sqrt(252) : null;
+    sharpeRatio = stdDev > 0 ? avgPnl / stdDev : null;
   }
 
   return {

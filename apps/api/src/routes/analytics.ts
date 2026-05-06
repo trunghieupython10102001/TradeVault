@@ -2,7 +2,7 @@ import { Router, Response } from 'express';
 import { prisma } from '@repo/database';
 import { AuthRequest } from '../middleware/auth';
 import { calculateMetrics } from '../lib/calculations';
-import { subDays, startOfYear, getDay, getHours } from 'date-fns';
+import { subDays, startOfYear, getDay, getHours, format } from 'date-fns';
 
 const router = Router();
 
@@ -40,6 +40,14 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     const where: any = { userId, status: 'CLOSED' };
     if (periodStart) where.exitDate = { gte: periodStart };
 
+    // For period views, compute equity at period start so curve is absolute
+    const prePeriodAgg = periodStart
+      ? await prisma.trade.aggregate({
+          where: { userId, status: 'CLOSED', exitDate: { lt: periodStart } },
+          _sum: { pnl: true },
+        })
+      : null;
+
     const [trades, account] = await Promise.all([
       prisma.trade.findMany({
         where,
@@ -62,6 +70,8 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     ]);
 
     const initialBalance = Number(account?.initialBalance ?? 0);
+    // Equity at the start of the selected period
+    const startingEquity = initialBalance + Number(prePeriodAgg?._sum?.pnl ?? 0);
 
     // Aggregation maps
     const strategyMap: Record<string, { trades: number; wins: number; pnl: number }> = {};
@@ -70,9 +80,10 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     const sessionMap: Record<string, { trades: number; wins: number; pnl: number; lots: number }> = {};
     const hourMap: Record<number, { trades: number; wins: number; pnl: number }> = {};
 
-    let runningEquity = 0;
-    let peak = 0;
+    let runningEquity = startingEquity;
+    let peak = startingEquity;
     const drawdownPoints: number[] = [];
+    const equityCurve: { date: string; equity: number }[] = [];
 
     for (const trade of trades) {
       const pnl = Number(trade.pnl) || 0;
@@ -119,11 +130,14 @@ router.get('/', async (req: AuthRequest, res: Response) => {
         hourMap[hour].pnl += pnl;
       }
 
-      // Drawdown
+      // Drawdown & equity curve
       runningEquity += pnl;
       if (runningEquity > peak) peak = runningEquity;
-      const dd = peak > 0 ? ((runningEquity - peak) / peak) * 100 : 0;
+      const dd = ((runningEquity - peak) / peak) * 100;
       drawdownPoints.push(round2(dd));
+      if (trade.exitDate) {
+        equityCurve.push({ date: format(trade.exitDate, 'yyyy-MM-dd'), equity: round2(runningEquity) });
+      }
     }
 
     // Statistics panel metrics
@@ -132,10 +146,11 @@ router.get('/', async (req: AuthRequest, res: Response) => {
         pnl: Number(t.pnl),
         rMultiple: t.rMultiple ? Number(t.rMultiple) : null,
         exitDate: t.exitDate,
-      }))
+      })),
+      startingEquity
     );
     const totalLots = round2(trades.reduce((s, t) => s + (Number(t.quantity) || 0), 0));
-    const equity = round2(initialBalance + metrics.totalPnl);
+    const equity = round2(startingEquity + metrics.totalPnl);
 
     const stats = {
       equity,
@@ -146,7 +161,8 @@ router.get('/', async (req: AuthRequest, res: Response) => {
       totalTrades: metrics.totalTrades,
       totalLots,
       sharpeRatio: metrics.sharpeRatio !== null ? round2(metrics.sharpeRatio) : null,
-      avgRMultiple: metrics.avgRMultiple !== null ? round2(metrics.avgRMultiple) : null,
+      // avgRRR = payoff ratio (avgWin / avgLoss) — matches FTMO's definition
+      avgRMultiple: metrics.avgLoss > 0 ? round2(metrics.avgWin / metrics.avgLoss) : null,
       expectancy: round2(metrics.expectancy),
       profitFactor: metrics.profitFactor === Infinity ? null : round2(metrics.profitFactor),
       maxDrawdown: round2(metrics.maxDrawdown),
@@ -214,6 +230,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 
     res.json({
       stats,
+      equityCurve,
       byStrategy,
       bySymbol,
       byDay,

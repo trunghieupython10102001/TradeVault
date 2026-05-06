@@ -31,13 +31,13 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     });
     const initialBalance = Number(account?.initialBalance ?? 0);
 
-    // Pass exitDate to calculateMetrics for proper daily-return Sharpe
     const metrics = calculateMetrics(
       trades.map((t: any) => ({
         pnl: Number(t.pnl),
         rMultiple: t.rMultiple ? Number(t.rMultiple) : null,
         exitDate: t.exitDate,
-      }))
+      })),
+      initialBalance
     );
 
     // Equity Curve (cumulative PnL starting from initial account balance)

@@ -268,8 +268,9 @@ export default function Dashboard() {
                     tickLine={false}
                     axisLine={false}
                     tick={{ fill: '#556582' }}
-                    tickFormatter={(v) => `$${v}`}
-                    width={60}
+                    tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+                    width={44}
+                    domain={['auto', 'auto']}
                   />
                   <Tooltip
                     contentStyle={{ backgroundColor: '#0e1628', border: '1px solid rgba(124,140,255,0.18)', borderRadius: '10px', fontSize: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}
