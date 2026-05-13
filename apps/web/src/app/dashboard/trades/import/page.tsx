@@ -8,6 +8,26 @@ import styles from './page.module.css';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
+type BrokerOption = 'auto' | 'mt4mt5' | 'exness';
+
+const BROKER_LABELS: Record<Exclude<BrokerOption, 'auto'>, string> = {
+  mt4mt5: 'MT4 / MT5',
+  exness: 'Exness',
+};
+
+const BROKER_COLUMNS: Record<Exclude<BrokerOption, 'auto'>, string[]> = {
+  mt4mt5: [
+    'Ticket', 'Open (date)', 'Type (buy/sell)', 'Volume', 'Symbol',
+    'Price (entry)', 'SL', 'TP', 'Close (date)', 'Price (exit)',
+    'Swap', 'Commissions', 'Profit', 'Pips', 'Duration',
+  ],
+  exness: [
+    'ticket', 'opening_time_utc', 'closing_time_utc', 'type', 'lots', 'symbol',
+    'opening_price', 'closing_price', 'stop_loss', 'take_profit',
+    'commission', 'swap', 'profit',
+  ],
+};
+
 interface SkippedRow {
   row: number;
   reason: string;
@@ -15,6 +35,8 @@ interface SkippedRow {
 
 interface ImportResult {
   success: boolean;
+  broker?: string;
+  brokerLabel?: string;
   imported: number;
   created: number;
   updated: number;
@@ -32,6 +54,7 @@ export default function ImportTradesPage() {
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState('');
+  const [broker, setBroker] = useState<BrokerOption>('auto');
 
   const handleFile = useCallback((file: File) => {
     if (!file.name.endsWith('.csv')) {
@@ -80,6 +103,7 @@ export default function ImportTradesPage() {
         body: JSON.stringify({
           csv: csvContent,
           startingBalance: startingBalance ? parseFloat(startingBalance) : undefined,
+          broker: broker === 'auto' ? undefined : broker,
         }),
       });
 
@@ -118,24 +142,39 @@ export default function ImportTradesPage() {
           </button>
           <h1 className={styles.title}>Import Trades from CSV</h1>
           <p className={styles.subtitle}>
-            Upload a CSV export from your broker. Supported format: MT4/MT5 trade history export.
+            Upload a CSV export from your broker. Supported formats: MT4/MT5, Exness.
           </p>
         </div>
 
         <div className={styles.formatCard}>
-          <h3 className={styles.formatTitle}>Expected CSV Format</h3>
-          <p className={styles.formatDesc}>
-            The CSV must have these columns in order:
-          </p>
-          <div className={styles.columnList}>
-            {[
-              'Ticket', 'Open (date)', 'Type (buy/sell)', 'Volume', 'Symbol',
-              'Price (entry)', 'SL', 'TP', 'Close (date)', 'Price (exit)',
-              'Swap', 'Commissions', 'Profit', 'Pips', 'Duration',
-            ].map((col) => (
-              <span key={col} className={styles.colBadge}>{col}</span>
-            ))}
+          <div className={styles.formatHeader}>
+            <h3 className={styles.formatTitle}>Broker format</h3>
+            <select
+              className={styles.brokerSelect}
+              value={broker}
+              onChange={(e) => setBroker(e.target.value as BrokerOption)}
+            >
+              <option value="auto">Auto-detect</option>
+              <option value="mt4mt5">MT4 / MT5</option>
+              <option value="exness">Exness</option>
+            </select>
           </div>
+          {broker === 'auto' ? (
+            <p className={styles.formatDesc}>
+              We&apos;ll detect your broker automatically. Supported: MT4/MT5, Exness.
+            </p>
+          ) : (
+            <>
+              <p className={styles.formatDesc}>
+                Expected columns for {BROKER_LABELS[broker]}:
+              </p>
+              <div className={styles.columnList}>
+                {BROKER_COLUMNS[broker].map((col) => (
+                  <span key={col} className={styles.colBadge}>{col}</span>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         <div className={styles.balanceSection}>
@@ -209,7 +248,9 @@ export default function ImportTradesPage() {
           <div className={styles.resultCard}>
             <div className={styles.resultHeader}>
               <CheckCircle size={20} className={styles.successIcon} />
-              <span className={styles.resultTitle}>Import Complete</span>
+              <span className={styles.resultTitle}>
+                Import complete{result.brokerLabel ? ` · ${result.brokerLabel}` : ''}
+              </span>
             </div>
             <div className={styles.resultStats}>
               <div className={styles.statItem}>

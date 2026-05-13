@@ -424,3 +424,24 @@
 .viewBtn:hover {
   opacity: 0.9;
 }
+
+.formatHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.brokerSelect {
+  padding: 6px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.brokerSelect:hover { border-color: var(--border-secondary); }
+.brokerSelect:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
