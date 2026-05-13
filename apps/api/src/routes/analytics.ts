@@ -228,7 +228,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     }).filter(Boolean);
 
     const maxDrawdown = drawdownPoints.length > 0 ? Math.min(...drawdownPoints) : 0;
-    const byDayHour = aggregateByDayHour(trades);
+    const byDayHour = aggregateByDayHour(trades.map((t) => ({ ...t, pnl: t.pnl !== null ? Number(t.pnl) : null })));
 
     res.json({
       stats,
