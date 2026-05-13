@@ -249,44 +249,44 @@ export default function Dashboard() {
                 <AreaChart data={equityCurve} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorEquity" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.25} />
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                      <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="var(--accent)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(26,40,68,0.8)" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" vertical={false} />
                   <XAxis
                     dataKey="date"
                     stroke="transparent"
                     fontSize={11}
                     tickLine={false}
                     axisLine={false}
-                    tick={{ fill: '#556582' }}
+                    tick={{ fill: 'var(--chart-tick)' }}
                   />
                   <YAxis
                     stroke="transparent"
                     fontSize={11}
                     tickLine={false}
                     axisLine={false}
-                    tick={{ fill: '#556582' }}
+                    tick={{ fill: 'var(--chart-tick)' }}
                     tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
                     width={44}
                     domain={['auto', 'auto']}
                   />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#0e1628', border: '1px solid rgba(124,140,255,0.18)', borderRadius: '10px', fontSize: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}
-                    itemStyle={{ color: '#f5f7ff' }}
-                    labelStyle={{ color: '#7182ab', marginBottom: '4px', fontSize: '11px' }}
-                    formatter={(v: number) => [`$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Equity']}
+                    contentStyle={{ backgroundColor: 'var(--chart-tooltip-bg)', border: '1px solid var(--chart-tooltip-border)', borderRadius: '10px', fontSize: '12px', boxShadow: 'var(--shadow-md)' }}
+                    itemStyle={{ color: 'var(--chart-tooltip-text)' }}
+                    labelStyle={{ color: 'var(--chart-tooltip-label)', marginBottom: '4px', fontSize: '11px' }}
+                    formatter={(v: any) => [`$${Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Equity']}
                   />
                   <Area
                     type="monotone"
                     dataKey="equity"
-                    stroke="#6366f1"
+                    stroke="var(--accent)"
                     strokeWidth={2}
                     fillOpacity={1}
                     fill="url(#colorEquity)"
                     dot={false}
-                    activeDot={{ r: 4, fill: '#818cf8', strokeWidth: 0 }}
+                    activeDot={{ r: 4, fill: 'var(--accent-hover)', strokeWidth: 0 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -303,34 +303,34 @@ export default function Dashboard() {
             <div className={styles.chartContainer}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={dailyPnl} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(26,40,68,0.8)" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" vertical={false} />
                   <XAxis
                     dataKey="date"
                     stroke="transparent"
                     fontSize={11}
                     tickLine={false}
                     axisLine={false}
-                    tick={{ fill: '#556582' }}
+                    tick={{ fill: 'var(--chart-tick)' }}
                   />
                   <YAxis
                     stroke="transparent"
                     fontSize={11}
                     tickLine={false}
                     axisLine={false}
-                    tick={{ fill: '#556582' }}
+                    tick={{ fill: 'var(--chart-tick)' }}
                     tickFormatter={(v) => `$${v}`}
                     width={52}
                   />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#1c2845', border: '1px solid #243458', borderRadius: '8px', fontSize: '12px' }}
-                    itemStyle={{ color: '#f0f4ff' }}
-                    cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+                    contentStyle={{ backgroundColor: 'var(--chart-tooltip-bg)', border: '1px solid var(--chart-tooltip-border)', borderRadius: '8px', fontSize: '12px' }}
+                    itemStyle={{ color: 'var(--chart-tooltip-text)' }}
+                    cursor={{ fill: 'var(--bg-glass-strong)' }}
                   />
                   <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                     {dailyPnl?.map((entry: DailyPnlPoint, index: number) => (
                       <Cell
                         key={`cell-${index}`}
-                        fill={entry.value >= 0 ? '#22c55e' : '#f87171'}
+                        fill={entry.value >= 0 ? 'var(--green)' : 'var(--red)'}
                         fillOpacity={0.85}
                       />
                     ))}

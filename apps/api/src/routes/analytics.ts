@@ -3,6 +3,7 @@ import { prisma } from '@repo/database';
 import { AuthRequest } from '../middleware/auth';
 import { calculateMetrics } from '../lib/calculations';
 import { subDays, startOfYear, getDay, getHours, format } from 'date-fns';
+import { aggregateByDayHour } from '../lib/analytics-helpers';
 
 const router = Router();
 
@@ -227,6 +228,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     }).filter(Boolean);
 
     const maxDrawdown = drawdownPoints.length > 0 ? Math.min(...drawdownPoints) : 0;
+    const byDayHour = aggregateByDayHour(trades);
 
     res.json({
       stats,
@@ -236,6 +238,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
       byDay,
       bySession,
       byHour,
+      byDayHour,
       drawdown: drawdownPoints,
       maxDrawdown: round2(maxDrawdown),
       totalTrades: trades.length,

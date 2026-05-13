@@ -50,6 +50,20 @@ export default function JournalPage() {
     fetchEntries();
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const date = params.get('date');
+    if (!date) return;
+    const parsed = new Date(`${date}T00:00:00`);
+    if (Number.isNaN(parsed.getTime())) return;
+    setEditingEntry(null);
+    setSelectedDate(parsed);
+    setMood('NEUTRAL');
+    setConfidence(5);
+    setContent('');
+    setShowForm(true);
+  }, []);
+
   const openNew = () => {
     setEditingEntry(null);
     setSelectedDate(new Date());
@@ -109,7 +123,7 @@ export default function JournalPage() {
 
   const formTitle = editingEntry
     ? `Editing — ${formatDate(editingEntry.entryDate)}`
-    : `Today's Entry — ${formatDate(new Date())}`;
+    : `New Entry — ${formatDate(selectedDate)}`;
 
   return (
     <>

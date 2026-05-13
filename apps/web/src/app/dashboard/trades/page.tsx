@@ -329,6 +329,20 @@ export default function TradeLogPage() {
         {loading && (
           <div className={styles.tableWrapper}>
             <table className={styles.table}>
+              <colgroup>
+                <col style={{ width: '3.5%' }} />
+                <col style={{ width: '8%' }} />
+                <col style={{ width: '9%' }} />
+                <col style={{ width: '10%' }} />
+                <col style={{ width: '8%' }} />
+                <col style={{ width: '8%' }} />
+                <col style={{ width: '5%' }} />
+                <col style={{ width: '8.5%' }} />
+                <col style={{ width: '10%' }} />
+                <col style={{ width: '11%' }} />
+                <col style={{ width: '7.5%' }} />
+                <col style={{ width: '11.5%' }} />
+              </colgroup>
               <thead>
                 <tr>
                   <th className={styles.checkboxCol}></th>
@@ -348,7 +362,7 @@ export default function TradeLogPage() {
               <tbody>
                 {Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i} className={styles.row}>
-                    {Array.from({ length: 11 }).map((_, j) => (
+                    {Array.from({ length: 12 }).map((_, j) => (
                       <td key={j}>
                         <div className={styles.skeleton} style={{ width: j === 0 ? 16 : j === 1 ? 60 : j === 10 ? 70 : 50, height: 16 }} />
                       </td>
@@ -382,6 +396,20 @@ export default function TradeLogPage() {
           <>
             <div className={styles.tableWrapper}>
               <table className={styles.table}>
+                <colgroup>
+                  <col style={{ width: '3.5%' }} />
+                  <col style={{ width: '8%' }} />
+                  <col style={{ width: '9%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '8%' }} />
+                  <col style={{ width: '8%' }} />
+                  <col style={{ width: '5%' }} />
+                  <col style={{ width: '8.5%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '11%' }} />
+                  <col style={{ width: '7.5%' }} />
+                  <col style={{ width: '11.5%' }} />
+                </colgroup>
                 <thead>
                   <tr>
                     <th className={styles.checkboxCol}>
@@ -403,7 +431,7 @@ export default function TradeLogPage() {
                     <th>Strategy</th>
                     <th>Date</th>
                     <th>Rating</th>
-                    <th></th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -458,20 +486,26 @@ export default function TradeLogPage() {
                       <td className={styles.dateCell}>
                         <span className={styles.dateCellInner}>
                           <Clock size={12} />
-                          {formatDate(trade.entryDate, 'MM/dd HH:mm')}
+                          {trade.status === 'CLOSED' && trade.exitDate
+                            ? formatDate(trade.exitDate, 'MM/dd HH:mm')
+                            : formatDate(trade.entryDate, 'MM/dd HH:mm')}
                         </span>
                       </td>
                       <td>
-                        <div className={styles.stars}>
-                          {[1, 2, 3, 4, 5].map((s) => (
-                            <span
-                              key={s}
-                              className={s <= trade.rating ? styles.starFilled : styles.starEmpty}
-                            >
-                              ★
-                            </span>
-                          ))}
-                        </div>
+                        {trade.rating > 0 ? (
+                          <div className={styles.stars}>
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <span
+                                key={s}
+                                className={s <= trade.rating ? styles.starFilled : styles.starEmpty}
+                              >
+                                ★
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className={styles.noRating}>—</span>
+                        )}
                       </td>
                       <td>
                         <div className={styles.actionCell}>
@@ -538,7 +572,7 @@ export default function TradeLogPage() {
                     {/* Expandable detail row */}
                     {expandedId === trade.id && (
                       <tr className={styles.expandRow} key={`${trade.id}-expand`}>
-                        <td colSpan={11} className={styles.expandCell}>
+                        <td colSpan={12} className={styles.expandCell}>
                           <div className={styles.expandContent}>
                             {/* Notes & Analysis */}
                             <div className={styles.expandSection}>

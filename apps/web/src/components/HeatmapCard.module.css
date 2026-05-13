@@ -1,0 +1,135 @@
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--text-base);
+}
+
+.subtitle {
+  margin-top: 4px;
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+}
+
+.toggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  background: var(--bg-glass);
+}
+
+.toggle button {
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  padding: 5px 9px;
+}
+
+.toggle button:hover,
+.active {
+  background: var(--accent-muted) !important;
+  color: var(--accent) !important;
+}
+
+.scroller {
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+}
+
+.grid {
+  min-width: 860px;
+  display: grid;
+  grid-template-columns: 44px repeat(24, 1fr);
+  gap: 4px;
+}
+
+.rowContents {
+  display: contents;
+}
+
+.corner,
+.hour,
+.day {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.hour {
+  text-align: center;
+}
+
+.day {
+  display: flex;
+  align-items: center;
+}
+
+.cell {
+  aspect-ratio: 1;
+  min-height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--border-primary);
+  position: relative;
+}
+
+.cell:hover {
+  transform: scale(1.08);
+  z-index: 3;
+  border-color: var(--border-strong);
+}
+
+.cell:hover .tooltip {
+  opacity: 1;
+  transform: translate(-50%, -6px);
+}
+
+.tooltip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 132px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  box-shadow: var(--shadow-md);
+  font-size: var(--text-xs);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 0);
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+  z-index: 20;
+}
+
+.tooltip strong {
+  color: var(--text-primary);
+}
+
+.empty {
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+}

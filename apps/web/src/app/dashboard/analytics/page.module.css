@@ -7,7 +7,7 @@
   gap: var(--space-6);
 }
 
-/* Period Bar */
+/* ===== Period Bar ===== */
 .periodBar {
   display: flex;
   gap: var(--space-1);
@@ -41,7 +41,7 @@
   color: white !important;
 }
 
-/* Card */
+/* ===== Card ===== */
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border-primary);
@@ -78,6 +78,13 @@
   font-family: var(--font-mono);
 }
 
+.cardMetaNeutral {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-weight: 500;
+  font-family: var(--font-mono);
+}
+
 .grid2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -110,6 +117,10 @@
   border-color: var(--border-secondary);
 }
 
+.statTileHero {
+  padding: var(--space-5) var(--space-5);
+}
+
 .statTileLabel {
   font-size: var(--text-xs);
   color: var(--text-tertiary);
@@ -122,7 +133,7 @@
 }
 
 .statTileValue {
-  font-size: var(--text-xl);
+  font-size: var(--text-2xl);
   font-weight: 700;
   color: var(--text-primary);
   font-family: var(--font-mono);
@@ -133,9 +144,49 @@
 .statTileValue.negative { color: var(--red); }
 .statTileValue.warn { color: #f59e0b; }
 
+.statTileSub {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  margin-top: 2px;
+}
+
+/* Win rate mini bar inside stat tile */
+.statMiniBar {
+  height: 3px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-top: var(--space-2);
+}
+
+.statMiniBarFill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 0.6s ease;
+}
+
+/* ===== Skeleton loading ===== */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-tertiary) 25%,
+    rgba(255, 255, 255, 0.055) 50%,
+    var(--bg-tertiary) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
+
 /* ===== Equity Chart ===== */
 .equityChart {
-  height: 220px;
+  height: 280px;
   margin-top: var(--space-2);
 }
 
@@ -210,6 +261,23 @@
   border-radius: 99px;
 }
 
+/* Win rate mini bar in session table */
+.sessionWinBar {
+  margin-top: 3px;
+  height: 2px;
+  background: var(--bg-primary);
+  border-radius: 99px;
+  overflow: hidden;
+  max-width: 60px;
+  margin-left: auto;
+}
+
+.sessionWinBarFill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.5s ease;
+}
+
 /* ===== Hour Chart ===== */
 .hourChart {
   display: flex;
@@ -233,7 +301,7 @@
 
 .hourBarWrap:hover .hourTooltip {
   opacity: 1;
-  transform: translateY(-4px);
+  transform: translateX(-50%) translateY(-4px);
   pointer-events: auto;
 }
 
@@ -254,7 +322,7 @@
 }
 
 .hourBarWrap:hover .hourBar {
-  opacity: 0.85;
+  opacity: 0.7 !important;
 }
 
 .hourLabel {
@@ -267,7 +335,7 @@
 
 .hourTooltip {
   position: absolute;
-  top: -56px;
+  top: -60px;
   left: 50%;
   transform: translateX(-50%) translateY(0);
   background: var(--bg-primary);
@@ -296,6 +364,7 @@
 
 .hourLegend {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-4);
   margin-top: var(--space-6);
   padding-top: var(--space-4);
@@ -399,14 +468,20 @@
 
 .dayRow {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: var(--space-2);
   padding: var(--space-3);
   border-radius: var(--radius-md);
   transition: background var(--transition-fast);
 }
 
 .dayRow:hover { background: var(--bg-tertiary); }
+
+.dayRowContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 
 .dayInfo {
   display: flex;
@@ -437,10 +512,17 @@
   font-family: var(--font-mono);
 }
 
-.dayStats > span:last-child {
-  font-size: var(--text-sm);
-  font-weight: 600;
-  font-family: var(--font-mono);
+.dayBarTrack {
+  height: 3px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.dayBarFill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 0.6s ease;
 }
 
 /* ===== Symbol Grid ===== */
@@ -512,27 +594,6 @@
   padding: var(--space-4) 0;
 }
 
-.loadingState {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  justify-content: center;
-  padding: var(--space-16);
-  color: var(--text-tertiary);
-  font-size: var(--text-sm);
-}
-
-.spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--border-primary);
-  border-top-color: var(--accent);
-  border-radius: var(--radius-full);
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
-
 .emptyState {
   display: flex;
   flex-direction: column;
@@ -561,4 +622,6 @@
   .grid2 { grid-template-columns: 1fr; }
   .symbolGrid { grid-template-columns: 1fr; }
   .statsGrid { grid-template-columns: repeat(2, 1fr); }
+  .statsGrid2Col { grid-template-columns: 1fr; }
+  .statTileValue { font-size: var(--text-xl); }
 }

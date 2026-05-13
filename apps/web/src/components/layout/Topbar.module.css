@@ -7,7 +7,7 @@
   margin: 18px 18px 0 0;
   border: 1px solid var(--border-primary);
   border-radius: 24px;
-  background: rgba(11, 17, 32, 0.72);
+  background: var(--bg-card);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   box-shadow: var(--shadow-sm);
@@ -52,7 +52,7 @@
   width: 40px;
   height: 40px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-glass);
   border: 1px solid var(--border-primary);
   color: var(--text-tertiary);
   cursor: pointer;
@@ -61,9 +61,36 @@
 }
 
 .menuBtn:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--bg-glass-strong);
   color: var(--text-secondary);
   border-color: var(--border-secondary);
+}
+
+.searchPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 10px 7px 14px;
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  background: var(--bg-glass);
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+}
+
+.searchPill:hover {
+  background: var(--bg-glass-strong);
+  color: var(--text-primary);
+}
+
+.searchPill kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  background: var(--bg-input);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
 }
 
 .datePill {
@@ -72,8 +99,8 @@
   align-items: flex-end;
   padding: 9px 14px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.035);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-primary);
   min-width: 116px;
 }
 
@@ -129,6 +156,10 @@
   }
 
   .datePill {
+    display: none;
+  }
+
+  .searchPill {
     display: none;
   }
 }

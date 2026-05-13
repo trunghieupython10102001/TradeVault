@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { Menu } from 'lucide-react';
 import { useMobileSidebar } from '@/lib/mobile-sidebar-context';
 import { useAuth } from '@/lib/auth-context';
+import { useShortcutContext } from '@/lib/shortcuts';
 import styles from './Topbar.module.css';
 
 interface TopbarProps {
@@ -14,6 +15,7 @@ interface TopbarProps {
 export default function Topbar({ title, subtitle }: TopbarProps) {
   const { toggle } = useMobileSidebar();
   const { user } = useAuth();
+  const { setPaletteOpen } = useShortcutContext();
   const today = useMemo(
     () => new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date()),
     []
@@ -40,6 +42,10 @@ export default function Topbar({ title, subtitle }: TopbarProps) {
         </div>
       </div>
       <div className={styles.right}>
+        <button type="button" className={styles.searchPill} onClick={() => setPaletteOpen(true)}>
+          <span>Search...</span>
+          <kbd>⌘K</kbd>
+        </button>
         <div className={styles.datePill}>
           <span className={styles.dateLabel}>Today</span>
           <span className={styles.dateValue}>{today}</span>

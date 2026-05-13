@@ -57,6 +57,24 @@
   --orange-bg: rgba(251, 146, 60, 0.12);
   --orange-border: rgba(251, 146, 60, 0.25);
 
+  --chart-grid: rgba(134, 153, 198, 0.14);
+  --chart-tick: #7182ab;
+  --chart-tooltip-bg: #0e1628;
+  --chart-tooltip-border: rgba(124, 140, 255, 0.18);
+  --chart-tooltip-text: #f5f7ff;
+  --chart-tooltip-label: #7182ab;
+
+  --mood-great: #22c55e;
+  --mood-great-bg: rgba(34, 197, 94, 0.18);
+  --mood-good: #60a5fa;
+  --mood-good-bg: rgba(96, 165, 250, 0.18);
+  --mood-neutral: #94a3b8;
+  --mood-neutral-bg: rgba(148, 163, 184, 0.16);
+  --mood-bad: #fb923c;
+  --mood-bad-bg: rgba(251, 146, 60, 0.18);
+  --mood-terrible: #f87171;
+  --mood-terrible-bg: rgba(248, 113, 113, 0.18);
+
   /* Spacing */
   --space-1: 4px;
   --space-2: 8px;
@@ -116,6 +134,87 @@
   --topbar-height: 74px;
 }
 
+[data-theme="light"] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f5f9;
+  --bg-card: rgba(255, 255, 255, 0.88);
+  --bg-card-hover: #f8fafc;
+  --bg-elevated: #ffffff;
+  --bg-input: #ffffff;
+  --bg-overlay: rgba(15, 23, 42, 0.45);
+  --bg-glass: rgba(15, 23, 42, 0.04);
+  --bg-glass-strong: rgba(15, 23, 42, 0.06);
+
+  --border-primary: #e2e8f0;
+  --border-secondary: #cbd5e1;
+  --border-strong: #94a3b8;
+  --border-focus: #4f46e5;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
+
+  --accent: #4f46e5;
+  --accent-primary: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-strong: #6d28d9;
+  --accent-muted: rgba(79, 70, 229, 0.10);
+  --accent-border: rgba(79, 70, 229, 0.25);
+  --accent-glow: rgba(79, 70, 229, 0.20);
+  --accent-cyan: #0891b2;
+  --accent-pink: #db2777;
+
+  --green: #16a34a;
+  --green-hover: #15803d;
+  --green-bg: rgba(22, 163, 74, 0.10);
+  --green-border: rgba(22, 163, 74, 0.25);
+  --red: #dc2626;
+  --red-hover: #b91c1c;
+  --red-bg: rgba(220, 38, 38, 0.10);
+  --red-border: rgba(220, 38, 38, 0.25);
+  --yellow: #ca8a04;
+  --yellow-bg: rgba(202, 138, 4, 0.10);
+  --yellow-border: rgba(202, 138, 4, 0.25);
+  --blue: #2563eb;
+  --blue-bg: rgba(37, 99, 235, 0.10);
+  --blue-border: rgba(37, 99, 235, 0.25);
+  --purple: #9333ea;
+  --purple-bg: rgba(147, 51, 234, 0.10);
+  --purple-border: rgba(147, 51, 234, 0.25);
+  --cyan: #0891b2;
+  --cyan-bg: rgba(8, 145, 178, 0.10);
+  --orange: #ea580c;
+  --orange-bg: rgba(234, 88, 12, 0.10);
+  --orange-border: rgba(234, 88, 12, 0.25);
+
+  --chart-grid: rgba(148, 163, 184, 0.26);
+  --chart-tick: #64748b;
+  --chart-tooltip-bg: #ffffff;
+  --chart-tooltip-border: #cbd5e1;
+  --chart-tooltip-text: #0f172a;
+  --chart-tooltip-label: #475569;
+
+  --mood-great: #16a34a;
+  --mood-great-bg: rgba(22, 163, 74, 0.14);
+  --mood-good: #2563eb;
+  --mood-good-bg: rgba(37, 99, 235, 0.12);
+  --mood-neutral: #64748b;
+  --mood-neutral-bg: rgba(100, 116, 139, 0.12);
+  --mood-bad: #ea580c;
+  --mood-bad-bg: rgba(234, 88, 12, 0.12);
+  --mood-terrible: #dc2626;
+  --mood-terrible-bg: rgba(220, 38, 38, 0.12);
+
+  --shadow-sm: 0 8px 20px rgba(15, 23, 42, 0.08);
+  --shadow-md: 0 18px 40px rgba(15, 23, 42, 0.12);
+  --shadow-lg: 0 24px 60px rgba(15, 23, 42, 0.14);
+  --shadow-xl: 0 34px 90px rgba(15, 23, 42, 0.18);
+  --shadow-panel: 0 30px 80px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.86);
+}
+
 /* =========== RESET =========== */
 *,
 *::before,
@@ -144,6 +243,21 @@ body {
     radial-gradient(circle at 50% 100%, rgba(180, 141, 255, 0.1), transparent 36%),
     linear-gradient(180deg, #06101f 0%, #050816 32%, #040611 100%);
   background-attachment: fixed;
+}
+
+[data-theme="light"] body {
+  background-image:
+    radial-gradient(circle at top left, rgba(79, 70, 229, 0.10), transparent 30%),
+    radial-gradient(circle at 85% 12%, rgba(8, 145, 178, 0.08), transparent 24%),
+    radial-gradient(circle at 50% 100%, rgba(147, 51, 234, 0.06), transparent 36%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2ff 48%, #f8fafc 100%);
+}
+
+[data-theme="light"] body::before {
+  background:
+    linear-gradient(rgba(15, 23, 42, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.025) 1px, transparent 1px);
+  opacity: 0.36;
 }
 
 body::before {

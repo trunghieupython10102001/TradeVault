@@ -17,6 +17,7 @@ import {
 import { useAuth } from '@/lib/auth-context';
 import { useMobileSidebar } from '@/lib/mobile-sidebar-context';
 import { useSidebar } from '@/lib/sidebar-context';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import styles from './Sidebar.module.css';
 
 const navSections = [
@@ -112,6 +113,8 @@ export default function Sidebar() {
 
         {/* Bottom */}
         <div className={styles.bottom}>
+          <ThemeToggle compact={collapsed} />
+
           <Link
             href="/dashboard/settings"
             className={`${styles.navItem} ${pathname === '/dashboard/settings' ? styles.active : ''}`}

@@ -8,7 +8,6 @@ import {
   Calendar,
   ArrowUpRight,
   ArrowDownRight,
-  Clock,
   Globe,
   Activity,
 } from 'lucide-react';
@@ -17,6 +16,7 @@ import {
   Tooltip, ResponsiveContainer,
 } from 'recharts';
 import Topbar from '@/components/layout/Topbar';
+import { HeatmapCard, type DayHourRow } from '@/components/HeatmapCard';
 import { apiFetch } from '@/lib/api';
 import { formatCurrency, formatNumber } from '@/lib/calculations';
 import styles from './page.module.css';
@@ -57,7 +57,6 @@ interface SymbolRow { symbol: string; trades: number; winRate: number; pnl: numb
 interface DayRow { day: string; trades: number; winRate: number; pnl: number }
 interface SessionRow { session: string; trades: number; winRate: number; pnl: number; lots: number }
 interface HourRow { hour: number; trades: number; winRate: number; pnl: number }
-
 interface EquityPoint { date: string; equity: number }
 
 interface AnalyticsData {
@@ -68,6 +67,7 @@ interface AnalyticsData {
   byDay: DayRow[];
   bySession: SessionRow[];
   byHour: HourRow[];
+  byDayHour: DayHourRow[];
   drawdown: number[];
   maxDrawdown: number;
   totalTrades: number;
@@ -76,6 +76,57 @@ interface AnalyticsData {
 function fmt(n: number | null, decimals = 2): string {
   if (n === null) return '—';
   return formatNumber(n, decimals);
+}
+
+function Skeleton({ h, w = '100%' }: { h: string; w?: string }) {
+  return <div className={styles.skeleton} style={{ height: h, width: w }} />;
+}
+
+function AnalyticsSkeleton() {
+  return (
+    <>
+      <div className={styles.card}>
+        <Skeleton h="18px" w="110px" />
+        <div style={{ marginTop: 'var(--space-5)' }}>
+          <div className={`${styles.statsGrid} ${styles.statsGrid2Col}`} style={{ marginBottom: 'var(--space-3)' }}>
+            <Skeleton h="84px" />
+            <Skeleton h="84px" />
+          </div>
+          <div className={styles.statsGrid} style={{ marginBottom: 'var(--space-3)' }}>
+            <Skeleton h="76px" />
+            <Skeleton h="76px" />
+            <Skeleton h="76px" />
+          </div>
+          <div className={styles.statsGrid} style={{ marginBottom: 'var(--space-3)' }}>
+            <Skeleton h="76px" />
+            <Skeleton h="76px" />
+            <Skeleton h="76px" />
+          </div>
+          <div className={styles.statsGrid}>
+            <Skeleton h="76px" />
+            <Skeleton h="76px" />
+            <Skeleton h="76px" />
+          </div>
+        </div>
+      </div>
+      <div className={styles.card}>
+        <Skeleton h="18px" w="130px" />
+        <div style={{ marginTop: 'var(--space-5)' }}>
+          <Skeleton h="280px" />
+        </div>
+      </div>
+      <div className={styles.grid2}>
+        {[4, 5].map((lines, ci) => (
+          <div key={ci} className={styles.card}>
+            <Skeleton h="18px" w="150px" />
+            <div style={{ marginTop: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+              {Array.from({ length: lines }).map((_, i) => <Skeleton key={i} h="44px" />)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
 }
 
 export default function AnalyticsPage() {
@@ -101,10 +152,7 @@ export default function AnalyticsPage() {
   const maxStratPnl = data ? Math.max(...data.byStrategy.map((s) => Math.abs(s.pnl)), 1) : 1;
   const maxSymPnl = data ? Math.max(...data.bySymbol.map((s) => Math.abs(s.pnl)), 1) : 1;
   const maxSessionPnl = data ? Math.max(...data.bySession.map((s) => Math.abs(s.pnl)), 1) : 1;
-
-  // For hour chart — normalize bar heights
-  const hourData = data?.byHour ?? [];
-  const maxHourTrades = Math.max(...hourData.map((h) => h.trades), 1);
+  const maxDayPnl = data ? Math.max(...data.byDay.map((d) => Math.abs(d.pnl)), 1) : 1;
 
   return (
     <>
@@ -127,12 +175,7 @@ export default function AnalyticsPage() {
           })}
         </div>
 
-        {loading && (
-          <div className={styles.loadingState}>
-            <div className={styles.spinner} />
-            <span>Loading analytics...</span>
-          </div>
-        )}
+        {loading && <AnalyticsSkeleton />}
 
         {!loading && data && data.totalTrades === 0 && (
           <div className={styles.emptyState}>
@@ -148,15 +191,16 @@ export default function AnalyticsPage() {
             <div className={styles.card}>
               <div className={styles.cardHeader}>
                 <h3 className={styles.cardTitle}><Activity size={18} /> Statistics</h3>
+                <span className={styles.cardMetaNeutral}>{data.totalTrades} trades</span>
               </div>
 
-              {/* Equity + Balance */}
+              {/* Hero: Equity + Total P&L */}
               <div className={`${styles.statsGrid} ${styles.statsGrid2Col}`} style={{ marginBottom: 'var(--space-3)' }}>
-                <div className={styles.statTile}>
+                <div className={`${styles.statTile} ${styles.statTileHero}`}>
                   <span className={styles.statTileLabel}>Equity</span>
                   <span className={styles.statTileValue}>{formatCurrency(data.stats.equity)}</span>
                 </div>
-                <div className={styles.statTile}>
+                <div className={`${styles.statTile} ${styles.statTileHero}`}>
                   <span className={styles.statTileLabel}>Total P&amp;L</span>
                   <span className={`${styles.statTileValue} ${data.stats.totalPnl >= 0 ? 'positive' : 'negative'}`}>
                     {data.stats.totalPnl >= 0 ? '+' : ''}{formatCurrency(data.stats.totalPnl)}
@@ -164,13 +208,22 @@ export default function AnalyticsPage() {
                 </div>
               </div>
 
-              {/* Row 1 */}
+              {/* Row 1: Win Rate, Avg Profit, Avg Loss */}
               <div className={styles.statsGrid} style={{ marginBottom: 'var(--space-3)' }}>
                 <div className={styles.statTile}>
                   <span className={styles.statTileLabel}>Win Rate</span>
                   <span className={`${styles.statTileValue} ${data.stats.winRate >= 50 ? 'positive' : 'warn'}`}>
                     {fmt(data.stats.winRate, 1)}%
                   </span>
+                  <div className={styles.statMiniBar}>
+                    <div
+                      className={styles.statMiniBarFill}
+                      style={{
+                        width: `${data.stats.winRate}%`,
+                        background: data.stats.winRate >= 50 ? 'var(--green)' : '#f59e0b',
+                      }}
+                    />
+                  </div>
                 </div>
                 <div className={styles.statTile}>
                   <span className={styles.statTileLabel}>Avg Profit</span>
@@ -186,7 +239,7 @@ export default function AnalyticsPage() {
                 </div>
               </div>
 
-              {/* Row 2 */}
+              {/* Row 2: Trades, Lots, Sharpe */}
               <div className={styles.statsGrid} style={{ marginBottom: 'var(--space-3)' }}>
                 <div className={styles.statTile}>
                   <span className={styles.statTileLabel}>Trades</span>
@@ -204,8 +257,8 @@ export default function AnalyticsPage() {
                 </div>
               </div>
 
-              {/* Row 3 */}
-              <div className={styles.statsGrid}>
+              {/* Row 3: Avg RRR, Expectancy, Profit Factor */}
+              <div className={styles.statsGrid} style={{ marginBottom: 'var(--space-3)' }}>
                 <div className={styles.statTile}>
                   <span className={styles.statTileLabel}>Avg RRR</span>
                   <span className={`${styles.statTileValue} ${(data.stats.avgRMultiple ?? 0) >= 1 ? 'positive' : 'warn'}`}>
@@ -222,6 +275,29 @@ export default function AnalyticsPage() {
                   <span className={styles.statTileLabel}>Profit Factor</span>
                   <span className={`${styles.statTileValue} ${(data.stats.profitFactor ?? 0) >= 1 ? 'positive' : 'negative'}`}>
                     {fmt(data.stats.profitFactor, 2)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Row 4: Max Drawdown, Best Trade, Worst Trade */}
+              <div className={styles.statsGrid}>
+                <div className={styles.statTile}>
+                  <span className={styles.statTileLabel}>Max Drawdown</span>
+                  <span className={`${styles.statTileValue} negative`}>
+                    {fmt(data.stats.maxDrawdownPercent, 1)}%
+                  </span>
+                  <span className={styles.statTileSub}>{formatCurrency(Math.abs(data.stats.maxDrawdown))}</span>
+                </div>
+                <div className={styles.statTile}>
+                  <span className={styles.statTileLabel}>Best Trade</span>
+                  <span className={`${styles.statTileValue} positive`}>
+                    +{formatCurrency(data.stats.bestTrade)}
+                  </span>
+                </div>
+                <div className={styles.statTile}>
+                  <span className={styles.statTileLabel}>Worst Trade</span>
+                  <span className={`${styles.statTileValue} negative`}>
+                    {formatCurrency(data.stats.worstTrade)}
                   </span>
                 </div>
               </div>
@@ -259,7 +335,8 @@ export default function AnalyticsPage() {
                       contentStyle={{ backgroundColor: '#0e1628', border: '1px solid rgba(124,140,255,0.18)', borderRadius: '10px', fontSize: '12px' }}
                       itemStyle={{ color: '#f5f7ff' }}
                       labelStyle={{ color: '#7182ab', marginBottom: '4px', fontSize: '11px' }}
-                      formatter={(v: number) => [`$${v.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, 'Equity']}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      formatter={(v: any) => [`$${Number(v).toLocaleString('en-US', { minimumFractionDigits: 2 })}`, 'Equity']}
                     />
                     <Area
                       type="monotone" dataKey="equity" stroke="#6366f1" strokeWidth={2}
@@ -285,10 +362,10 @@ export default function AnalyticsPage() {
                     <thead>
                       <tr>
                         <th>Session</th>
-                        <th style={{ textAlign: 'right' }}>Trades</th>
-                        <th style={{ textAlign: 'right' }}>Win %</th>
-                        <th style={{ textAlign: 'right' }}>Lots</th>
-                        <th style={{ textAlign: 'right' }}>P&amp;L</th>
+                        <th>Trades</th>
+                        <th>Win %</th>
+                        <th>Lots</th>
+                        <th>P&amp;L</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -301,7 +378,18 @@ export default function AnalyticsPage() {
                             </span>
                           </td>
                           <td className={styles.sessionCell}>{s.trades}</td>
-                          <td className={styles.sessionCell}>{fmt(s.winRate, 0)}%</td>
+                          <td className={styles.sessionCell}>
+                            {fmt(s.winRate, 0)}%
+                            <div className={styles.sessionWinBar}>
+                              <div
+                                className={styles.sessionWinBarFill}
+                                style={{
+                                  width: `${s.winRate}%`,
+                                  background: s.winRate >= 50 ? 'var(--green)' : '#f59e0b',
+                                }}
+                              />
+                            </div>
+                          </td>
                           <td className={styles.sessionCell}>{fmt(s.lots, 2)}</td>
                           <td className={styles.sessionCellPnl} style={{ color: s.pnl >= 0 ? 'var(--green)' : 'var(--red)' }}>
                             {s.pnl >= 0 ? '+' : ''}{formatCurrency(s.pnl)}
@@ -333,15 +421,26 @@ export default function AnalyticsPage() {
                   <div className={styles.dayList}>
                     {data.byDay.map((d) => (
                       <div key={d.day} className={styles.dayRow}>
-                        <div className={styles.dayInfo}>
-                          <span className={styles.dayName}>{d.day}</span>
-                          <span className={styles.dayMeta}>{d.trades} trades</span>
+                        <div className={styles.dayRowContent}>
+                          <div className={styles.dayInfo}>
+                            <span className={styles.dayName}>{d.day}</span>
+                            <span className={styles.dayMeta}>{d.trades} trades</span>
+                          </div>
+                          <div className={styles.dayStats}>
+                            <span className={styles.dayWinRate}>{fmt(d.winRate, 0)}%</span>
+                            <span className={d.pnl >= 0 ? 'pnl-positive' : 'pnl-negative'} style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)', fontWeight: 600 }}>
+                              {d.pnl >= 0 ? '+' : ''}{formatCurrency(d.pnl)}
+                            </span>
+                          </div>
                         </div>
-                        <div className={styles.dayStats}>
-                          <span className={styles.dayWinRate}>{fmt(d.winRate, 0)}%</span>
-                          <span className={d.pnl >= 0 ? 'pnl-positive' : 'pnl-negative'}>
-                            {formatCurrency(d.pnl)}
-                          </span>
+                        <div className={styles.dayBarTrack}>
+                          <div
+                            className={styles.dayBarFill}
+                            style={{
+                              width: `${(Math.abs(d.pnl) / maxDayPnl) * 100}%`,
+                              background: d.pnl >= 0 ? 'var(--green)' : 'var(--red)',
+                            }}
+                          />
                         </div>
                       </div>
                     ))}
@@ -351,76 +450,7 @@ export default function AnalyticsPage() {
             </div>
 
             {/* ===== Hour of Day ===== */}
-            <div className={styles.card}>
-              <div className={styles.cardHeader}>
-                <h3 className={styles.cardTitle}><Clock size={18} /> Trades by Hour (broker time)</h3>
-                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>
-                  Bar height = trade count · color = P&amp;L
-                </span>
-              </div>
-              {hourData.length === 0 ? (
-                <p className={styles.cardEmpty}>No hourly data available.</p>
-              ) : (
-                <>
-                  <div className={styles.hourChart}>
-                    {Array.from({ length: 24 }, (_, h) => {
-                      const hd = hourData.find((x) => x.hour === h);
-                      const height = hd ? Math.max((hd.trades / maxHourTrades) * 100, 4) : 0;
-                      const color = !hd ? 'transparent'
-                        : hd.pnl > 0 ? 'var(--green)'
-                        : hd.pnl < 0 ? 'var(--red)'
-                        : 'var(--text-muted)';
-                      return (
-                        <div key={h} className={styles.hourBarWrap}>
-                          <div className={styles.hourBarOuter}>
-                            <div
-                              className={styles.hourBar}
-                              style={{ height: `${height}%`, background: color, opacity: hd ? 0.8 : 0 }}
-                            />
-                          </div>
-                          {h % 3 === 0 && (
-                            <span className={styles.hourLabel}>{String(h).padStart(2, '0')}</span>
-                          )}
-                          {hd && (
-                            <div className={styles.hourTooltip}>
-                              <div className={styles.hourTooltipRow}>
-                                <span>{String(h).padStart(2, '0')}:00</span>
-                              </div>
-                              <div className={styles.hourTooltipRow}>
-                                <span>Trades</span>
-                                <strong>{hd.trades}</strong>
-                              </div>
-                              <div className={styles.hourTooltipRow}>
-                                <span>Win %</span>
-                                <strong>{fmt(hd.winRate, 0)}%</strong>
-                              </div>
-                              <div className={styles.hourTooltipRow}>
-                                <span>P&amp;L</span>
-                                <strong style={{ color }}>{formatCurrency(hd.pnl)}</strong>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className={styles.hourLegend}>
-                    <div className={styles.hourLegendItem}>
-                      <div className={styles.hourLegendDot} style={{ background: 'var(--green)' }} />
-                      <span>Profitable hour</span>
-                    </div>
-                    <div className={styles.hourLegendItem}>
-                      <div className={styles.hourLegendDot} style={{ background: 'var(--red)' }} />
-                      <span>Losing hour</span>
-                    </div>
-                    <div className={styles.hourLegendItem}>
-                      <div className={styles.hourLegendDot} style={{ background: 'var(--text-muted)' }} />
-                      <span>Break-even</span>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+            <HeatmapCard rows={data.byDayHour ?? []} />
 
             <div className={styles.grid2}>
               {/* By Strategy */}
@@ -459,11 +489,11 @@ export default function AnalyticsPage() {
                 )}
               </div>
 
-              {/* By Day of Week */}
+              {/* Top Symbols */}
               <div className={styles.card}>
                 <div className={styles.cardHeader}>
                   <h3 className={styles.cardTitle}><BarChart3 size={18} /> Top Symbols</h3>
-                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>{data.totalTrades} trades</span>
+                  <span className={styles.cardMetaNeutral}>{data.totalTrades} trades</span>
                 </div>
                 {data.bySymbol.length === 0 ? (
                   <p className={styles.cardEmpty}>No symbol data available.</p>
