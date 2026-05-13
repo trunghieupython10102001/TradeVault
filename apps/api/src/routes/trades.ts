@@ -26,10 +26,12 @@ function formatTrade(t: any) {
 router.get('/', async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId!;
-    const { search, side, status, accountId, page = '1', limit = '50' } = req.query;
+    const { search, side, status, accountId, from, to, page = '1', limit = '50' } = req.query;
     const pageNum = parseInt(page as string);
     const limitNum = Math.min(parseInt(limit as string), 100);
-    const skip = (pageNum - 1) * limitNum;
+    const hasRange = typeof from === 'string' && typeof to === 'string';
+    const take = hasRange ? 1000 : limitNum;
+    const skip = hasRange ? 0 : (pageNum - 1) * limitNum;
 
     const where: any = { userId };
 
@@ -45,13 +47,23 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     if (accountId && accountId !== 'ALL') {
       where.accountId = accountId as string;
     }
+    // Date range filtering requires both bounds; a single bound falls back to normal pagination.
+    if (hasRange) {
+      const fromDate = new Date(from);
+      const toDate = new Date(to);
+      if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
+        res.status(400).json({ error: 'Invalid date range. Use ISO dates for from and to.' });
+        return;
+      }
+      where.exitDate = { gte: fromDate, lte: toDate };
+    }
 
     const [trades, total] = await Promise.all([
       prisma.trade.findMany({
         where,
-        orderBy: { entryDate: 'desc' },
+        orderBy: hasRange ? { exitDate: 'asc' } : { entryDate: 'desc' },
         skip,
-        take: limitNum,
+        take,
         include: { images: true },
       }),
       prisma.trade.count({ where }),
@@ -61,9 +73,9 @@ router.get('/', async (req: AuthRequest, res: Response) => {
       data: trades.map(formatTrade),
       meta: {
         total,
-        page: pageNum,
-        limit: limitNum,
-        totalPages: Math.ceil(total / limitNum),
+        page: hasRange ? 1 : pageNum,
+        limit: take,
+        totalPages: hasRange ? 1 : Math.ceil(total / limitNum),
       },
     });
   } catch (error) {
@@ -355,7 +367,7 @@ router.post('/import', async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const rows = parseCsv(csv);
+    const { rows } = parseCsv(csv);
     if (rows.length === 0) {
       res.status(400).json({ error: 'No data rows found in CSV' });
       return;
@@ -437,8 +449,11 @@ router.post('/import', async (req: AuthRequest, res: Response) => {
         const hasExit = closeDate && closeDate.trim() !== '';
         const exitDate = hasExit ? new Date(closeDate) : null;
 
-        // Commission = |commissions| + |swap| (both are costs)
+        // In MT4/MT5 exports, Profit = raw price movement only.
+        // Swap and Commissions are separate negative values (costs).
+        // Net PnL = Profit + Swap + Commissions
         const totalCommission = Math.abs(commissions) + Math.abs(swap);
+        const netPnl = profit + swap + commissions;
 
         const tradeForCalc = {
           side: side as 'LONG' | 'SHORT',
@@ -449,8 +464,7 @@ router.post('/import', async (req: AuthRequest, res: Response) => {
           commission: totalCommission,
         };
 
-        // Use broker-reported profit directly as pnl (more accurate for exotic pairs)
-        const pnl = hasExit ? profit : null;
+        const pnl = hasExit ? netPnl : null;
         const rMultipleRaw = (hasExit && sl > 0 && tradeForCalc.exitPrice)
           ? calculateRMultiple({ ...tradeForCalc, exitPrice: tradeForCalc.exitPrice })
           : null;
