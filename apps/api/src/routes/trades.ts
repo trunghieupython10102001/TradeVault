@@ -4,6 +4,7 @@ import { AuthRequest } from '../middleware/auth';
 import { tradeSchema } from '../lib/validators';
 import { calculateRMultiple } from '../lib/calculations';
 import { parseCsv } from '../lib/csvParser';
+import { detectAdapter, getAdapter, type NormalizedTrade } from '../lib/brokerAdapters';
 
 const router = Router();
 
@@ -360,16 +361,33 @@ router.put('/:id', handleTradeUpdate);
 router.post('/import', async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId!;
-    const { csv, startingBalance } = req.body as { csv: string; startingBalance?: number };
+    const { csv, startingBalance, broker } = req.body as {
+      csv: string;
+      startingBalance?: number;
+      broker?: string;
+    };
 
     if (!csv || typeof csv !== 'string') {
       res.status(400).json({ error: 'CSV content is required' });
       return;
     }
 
-    const { rows } = parseCsv(csv);
+    const { headers, rows } = parseCsv(csv);
     if (rows.length === 0) {
       res.status(400).json({ error: 'No data rows found in CSV' });
+      return;
+    }
+
+    // Resolve adapter: explicit broker > auto-detect
+    const adapter = broker ? getAdapter(broker) : detectAdapter(headers);
+    if (broker && !adapter) {
+      res.status(400).json({ error: `Unknown broker: ${broker}. Supported: mt4mt5, exness.` });
+      return;
+    }
+    if (!adapter) {
+      res.status(400).json({
+        error: 'Could not detect broker format. Supported: MT4/MT5, Exness. Pick a broker manually.',
+      });
       return;
     }
 
@@ -385,22 +403,15 @@ router.post('/import', async (req: AuthRequest, res: Response) => {
     }
     const accountId = account.id;
 
-    // Determine initial balance: explicit override > auto-detect from Balance column > keep existing
+    // Starting balance: explicit override > adapter auto-detect > unchanged
     let resolvedInitialBalance: number | null = null;
     if (startingBalance && startingBalance > 0) {
       resolvedInitialBalance = startingBalance;
-    } else if (rows[0]) {
-      // Auto-detect: Balance column minus first trade's PnL components = balance before first trade
-      const balanceCol = parseFloat(rows[0]['Balance'] || '0');
-      const firstProfit = parseFloat(rows[0]['Profit'] || '0');
-      const firstSwap = parseFloat(rows[0]['Swap'] || '0');
-      const firstComm = parseFloat(rows[0]['Commissions'] || '0');
-      if (balanceCol > 0) {
-        resolvedInitialBalance = balanceCol - firstProfit - firstSwap - firstComm;
-      }
+    } else if (adapter.detectInitialBalance) {
+      const detected = adapter.detectInitialBalance(rows);
+      if (detected !== null && detected > 0) resolvedInitialBalance = detected;
     }
-
-    if (resolvedInitialBalance !== null && resolvedInitialBalance > 0) {
+    if (resolvedInitialBalance !== null) {
       await prisma.account.update({
         where: { id: accountId },
         data: { initialBalance: resolvedInitialBalance },
@@ -413,93 +424,60 @@ router.post('/import', async (req: AuthRequest, res: Response) => {
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i]!;
-      const rowNum = i + 2; // 1-indexed, +1 for header
+      const rowNum = i + 2;
 
       try {
-        // Map CSV columns to trade fields
-        // Headers: Ticket, Open, Type, Volume, Symbol, Price, SL, TP, Close, Price, Swap, Commissions, Profit, Pips, Trade duration in seconds
-        const ticket = row['Ticket'] || '';
-        const openDate = row['Open'] || '';
-        const type = (row['Type'] || '').toLowerCase();
-        const volume = parseFloat(row['Volume'] || '0');
-        const symbol = (row['Symbol'] || '').trim().toUpperCase();
-        const entryPrice = parseFloat(row['Price'] || '0');
-        const sl = parseFloat(row['SL'] || '0');
-        const tp = parseFloat(row['TP'] || '0');
-        const closeDate = row['Close'] || '';
-        // "Price_2" is the second "Price" column (exit price) — handled by parseCsv duplicate logic
-        // Fallback to positional col index 9 (0-based)
-        const exitPriceRaw = row['Price_2'] || row['_col_9'] || '';
-        const swap = parseFloat(row['Swap'] || '0');
-        const commissions = parseFloat(row['Commissions'] || '0');
-        const profit = parseFloat(row['Profit'] || '0');
-
-        if (!symbol || !openDate || !entryPrice || !volume) {
-          skipped.push({ row: rowNum, reason: 'Missing required fields (symbol, open date, entry price, volume)' });
+        const parsed = adapter.parseRow(row);
+        if ('skip' in parsed) {
+          skipped.push({ row: rowNum, reason: parsed.reason });
           continue;
         }
-
-        if (type !== 'buy' && type !== 'sell') {
-          skipped.push({ row: rowNum, reason: `Unknown trade type: "${type}"` });
-          continue;
-        }
-
-        const side = type === 'buy' ? 'LONG' : 'SHORT';
-        const entryDate = new Date(openDate);
-        const hasExit = closeDate && closeDate.trim() !== '';
-        const exitDate = hasExit ? new Date(closeDate) : null;
-
-        // In MT4/MT5 exports, Profit = raw price movement only.
-        // Swap and Commissions are separate negative values (costs).
-        // Net PnL = Profit + Swap + Commissions
-        const totalCommission = Math.abs(commissions) + Math.abs(swap);
-        const netPnl = profit + swap + commissions;
+        const t: NormalizedTrade = parsed;
 
         const tradeForCalc = {
-          side: side as 'LONG' | 'SHORT',
-          entryPrice,
-          exitPrice: exitDate ? (exitPriceRaw ? parseFloat(exitPriceRaw) : null) : null,
-          quantity: volume,
-          stopLoss: sl > 0 ? sl : null,
-          commission: totalCommission,
+          side: t.side,
+          entryPrice: t.entryPrice,
+          exitPrice: t.exitPrice,
+          quantity: t.quantity,
+          stopLoss: t.stopLoss,
+          commission: t.commission,
         };
 
-        const pnl = hasExit ? netPnl : null;
-        const rMultipleRaw = (hasExit && sl > 0 && tradeForCalc.exitPrice)
-          ? calculateRMultiple({ ...tradeForCalc, exitPrice: tradeForCalc.exitPrice })
+        const rMultipleRaw = (t.exitDate && t.stopLoss !== null && t.exitPrice !== null)
+          ? calculateRMultiple({ ...tradeForCalc, exitPrice: t.exitPrice })
           : null;
         const rMultiple = (rMultipleRaw != null && Math.abs(rMultipleRaw) < 9999) ? rMultipleRaw : null;
 
         const tradeData = {
           accountId,
-          symbol,
-          side: side as any,
-          status: hasExit ? 'CLOSED' : 'OPEN',
-          entryPrice,
-          exitPrice: tradeForCalc.exitPrice,
-          quantity: volume,
-          stopLoss: sl > 0 ? sl : null,
-          takeProfit: tp > 0 ? tp : null,
-          commission: totalCommission,
-          pnl,
+          symbol: t.symbol,
+          side: t.side as any,
+          status: (t.exitDate ? 'CLOSED' : 'OPEN') as any,
+          entryPrice: t.entryPrice,
+          exitPrice: t.exitPrice,
+          quantity: t.quantity,
+          stopLoss: t.stopLoss,
+          takeProfit: t.takeProfit,
+          commission: t.commission,
+          pnl: t.pnl,
           pnlPercent: null,
           rMultiple,
-          entryDate,
-          exitDate,
+          entryDate: t.entryDate,
+          exitDate: t.exitDate,
         };
 
-        if (ticket) {
+        if (t.brokerTicketId) {
           const existing = await prisma.trade.findUnique({
-            where: { unique_user_broker_ticket: { userId, brokerTicketId: ticket } },
+            where: { unique_user_broker_ticket: { userId, brokerTicketId: t.brokerTicketId } },
             select: { id: true },
           });
           await prisma.trade.upsert({
-            where: { unique_user_broker_ticket: { userId, brokerTicketId: ticket } },
+            where: { unique_user_broker_ticket: { userId, brokerTicketId: t.brokerTicketId } },
             update: tradeData,
-            create: { userId, brokerTicketId: ticket, ...tradeData },
+            create: { userId, brokerTicketId: t.brokerTicketId, ...tradeData },
           });
-          if (existing) updated.push(ticket);
-          else created.push(ticket);
+          if (existing) updated.push(t.brokerTicketId);
+          else created.push(t.brokerTicketId);
         } else {
           await prisma.trade.create({ data: { userId, ...tradeData } });
           created.push(`row-${rowNum}`);
@@ -511,6 +489,8 @@ router.post('/import', async (req: AuthRequest, res: Response) => {
 
     res.json({
       success: true,
+      broker: adapter.name,
+      brokerLabel: adapter.displayName,
       imported: created.length + updated.length,
       created: created.length,
       updated: updated.length,
