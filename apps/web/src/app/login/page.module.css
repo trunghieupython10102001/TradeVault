@@ -4,6 +4,7 @@
   align-items: center;
   justify-content: center;
   padding: 32px;
+  background: transparent;
 }
 
 .shell {
@@ -18,11 +19,11 @@
   position: relative;
   overflow: hidden;
   border-radius: 32px;
-  border: 1px solid rgba(150, 170, 255, 0.16);
+  border: 1px solid var(--border-primary);
   background:
-    radial-gradient(circle at top left, rgba(124, 140, 255, 0.24), transparent 36%),
-    radial-gradient(circle at 85% 20%, rgba(82, 214, 255, 0.18), transparent 28%),
-    linear-gradient(160deg, rgba(12, 18, 34, 0.88), rgba(6, 10, 22, 0.96));
+    radial-gradient(circle at top left, var(--accent-muted), transparent 36%),
+    radial-gradient(circle at 85% 20%, var(--cyan-bg), transparent 28%),
+    linear-gradient(160deg, var(--bg-card), var(--bg-secondary));
   box-shadow: var(--shadow-panel);
   padding: 40px;
   animation: floatIn 0.5s ease forwards;
@@ -33,7 +34,7 @@
   position: absolute;
   inset: auto -10% -20% 30%;
   height: 280px;
-  background: radial-gradient(circle, rgba(180, 141, 255, 0.16), transparent 60%);
+  background: radial-gradient(circle, var(--purple-bg), transparent 60%);
   pointer-events: none;
 }
 
@@ -43,9 +44,9 @@
   gap: 8px;
   padding: 8px 12px;
   border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #e7edff;
+  background: var(--bg-glass-strong);
+  border: 1px solid var(--border-secondary);
+  color: var(--text-primary);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -83,8 +84,8 @@
   gap: 10px;
   padding: 14px 16px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-primary);
   color: var(--text-secondary);
   font-size: 0.88rem;
   font-weight: 600;
@@ -92,7 +93,7 @@
 
 .card {
   width: 100%;
-  background: linear-gradient(180deg, rgba(12, 18, 35, 0.82), rgba(8, 12, 24, 0.94));
+  background: linear-gradient(180deg, var(--bg-card), var(--bg-secondary));
   border: 1px solid var(--border-primary);
   border-radius: 32px;
   padding: 36px;
@@ -166,11 +167,16 @@
   font-size: 0.95rem;
   outline: none;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  transition:
+    border-color var(--transition-base),
+    background var(--transition-base),
+    box-shadow var(--transition-base);
 }
 
 .input:focus {
   border-color: var(--border-focus);
-  background: rgba(10, 16, 32, 0.98);
+  background: var(--bg-input);
+  box-shadow: 0 0 0 3px var(--accent-muted);
 }
 
 .submitBtn {
@@ -189,6 +195,10 @@
   justify-content: center;
   gap: 10px;
   box-shadow: 0 16px 34px rgba(124, 140, 255, 0.28);
+  transition:
+    transform var(--transition-base),
+    box-shadow var(--transition-base),
+    opacity var(--transition-base);
 }
 
 .submitBtn:hover:not(:disabled) {
@@ -221,10 +231,26 @@
   color: var(--accent);
   text-decoration: none;
   font-weight: 500;
+  transition: color var(--transition-base);
 }
 
 .footer a:hover {
   color: var(--accent-hover);
+}
+
+:global([data-theme='light']) .hero {
+  background:
+    radial-gradient(circle at top left, var(--accent-muted), transparent 36%),
+    radial-gradient(circle at 85% 20%, var(--cyan-bg), transparent 28%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 252, 0.98));
+}
+
+:global([data-theme='light']) .card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 252, 0.98));
+}
+
+:global([data-theme='light']) .input {
+  box-shadow: inset 0 1px 0 rgba(15, 23, 42, 0.02);
 }
 
 @media (max-width: 980px) {
