@@ -1,28 +1,99 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { prisma } from '@repo/database';
+import { subDays, format } from 'date-fns';
+import { getUserIdFromRequest } from '@/server/auth/legacy-jwt';
+import { calculateMetrics } from '@/server/lib/calculations';
 
-export async function GET(request: NextRequest) {
+function getAuthenticatedUserId(request: Request) {
+  const auth = getUserIdFromRequest(request);
+  if (auth.error) {
+    return { response: NextResponse.json({ error: auth.error }, { status: auth.status }) };
+  }
+  if (!auth.userId) {
+    return { response: NextResponse.json({ error: 'Not authenticated' }, { status: 401 }) };
+  }
+  return { userId: auth.userId };
+}
+
+export async function GET(request: Request) {
+  const auth = getAuthenticatedUserId(request);
+  if (auth.response) return auth.response;
+
   try {
-    const token = request.headers.get('authorization') || '';
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-
-    const res = await fetch(`${API_BASE}/dashboard`, {
-      headers: {
-        ...(token ? { Authorization: token } : {}),
-      },
+    const userId = auth.userId;
+    const trades = await prisma.trade.findMany({
+      where: { userId, status: 'CLOSED' },
+      orderBy: { exitDate: 'asc' },
     });
 
-    if (!res.ok) {
-      const error = await res.text();
-      return NextResponse.json({ error }, { status: res.status });
+    const recentTrades = await prisma.trade.findMany({
+      where: { userId },
+      orderBy: { entryDate: 'desc' },
+      take: 5,
+    });
+
+    const account = await prisma.account.findFirst({
+      where: { userId, isDefault: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    const initialBalance = Number(account?.initialBalance ?? 0);
+
+    const metrics = calculateMetrics(
+      trades.map((trade) => ({
+        pnl: Number(trade.pnl),
+        rMultiple: trade.rMultiple ? Number(trade.rMultiple) : null,
+        exitDate: trade.exitDate,
+      })),
+      initialBalance
+    );
+
+    let cumulativePnl = initialBalance;
+    const equityCurve = trades.map((trade) => {
+      cumulativePnl += Number(trade.pnl);
+      return {
+        date: trade.exitDate ? format(trade.exitDate, 'yyyy-MM-dd') : '',
+        equity: cumulativePnl,
+      };
+    });
+
+    const dailyPnls: Record<string, number> = {};
+    const thirtyDaysAgo = subDays(new Date(), 30);
+    for (const trade of trades) {
+      if (trade.exitDate && trade.exitDate >= thirtyDaysAgo) {
+        const dateStr = format(trade.exitDate, 'yyyy-MM-dd');
+        dailyPnls[dateStr] = (dailyPnls[dateStr] || 0) + Number(trade.pnl);
+      }
     }
 
-    const data = await res.json();
-    return NextResponse.json(data);
+    let maxWinStreak = 0;
+    let maxLossStreak = 0;
+    let currentStreak = 0;
+    let lastIsWin: boolean | null = null;
+    for (const trade of trades) {
+      const isWin = Number(trade.pnl) > 0;
+      currentStreak = lastIsWin === null || isWin === lastIsWin ? currentStreak + 1 : 1;
+      lastIsWin = isWin;
+      if (isWin && currentStreak > maxWinStreak) maxWinStreak = currentStreak;
+      if (!isWin && currentStreak > maxLossStreak) maxLossStreak = currentStreak;
+    }
+
+    return NextResponse.json({
+      summary: { ...metrics, maxWinStreak, maxLossStreak },
+      equityCurve,
+      dailyPnl: Object.entries(dailyPnls)
+        .map(([date, value]) => ({ date, value }))
+        .sort((a, b) => a.date.localeCompare(b.date)),
+      recentTrades: recentTrades.map((trade) => ({
+        ...trade,
+        entryPrice: Number(trade.entryPrice),
+        exitPrice: trade.exitPrice ? Number(trade.exitPrice) : null,
+        quantity: Number(trade.quantity),
+        pnl: trade.pnl ? Number(trade.pnl) : null,
+        pnlPercent: trade.pnlPercent ? Number(trade.pnlPercent) : null,
+      })),
+    });
   } catch (error) {
-    console.error('Dashboard API error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch dashboard data' },
-      { status: 500 }
-    );
+    console.error('Error fetching dashboard data:', error);
+    return NextResponse.json({ error: 'Failed to fetch dashboard data' }, { status: 500 });
   }
 }
