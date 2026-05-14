@@ -6,8 +6,6 @@ import { ArrowLeft, Upload, FileText, CheckCircle, AlertCircle, X } from 'lucide
 import Topbar from '@/components/layout/Topbar';
 import styles from './page.module.css';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-
 type BrokerOption = 'auto' | 'mt4mt5' | 'exness';
 
 const BROKER_LABELS: Record<Exclude<BrokerOption, 'auto'>, string> = {
@@ -94,7 +92,7 @@ export default function ImportTradesPage() {
 
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const res = await fetch(`${API_BASE}/trades/import`, {
+      const res = await fetch('/api/trades/import', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

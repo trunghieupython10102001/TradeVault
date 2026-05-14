@@ -74,8 +74,7 @@ export default function TradeLogPage() {
     setExporting(true);
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-      const res = await fetch(`${API_BASE}/trades/export`, {
+      const res = await fetch('/api/trades/export', {
         headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       });
       if (!res.ok) throw new Error('Failed to fetch trades');
@@ -100,8 +99,7 @@ export default function TradeLogPage() {
     setExporting(true);
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-      const res = await fetch(`${API_BASE}/trades/export?format=csv`, {
+      const res = await fetch('/api/trades/export?format=csv', {
         headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       });
       if (!res.ok) throw new Error('Failed');
@@ -132,8 +130,7 @@ export default function TradeLogPage() {
     setBulkDeleting(true);
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-      const res = await fetch(`${API_BASE}/trades/bulk`, {
+      const res = await fetch('/api/trades/bulk', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
