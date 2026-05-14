@@ -33,6 +33,22 @@ describe('exnessAdapter', () => {
     expect(result.commission).toBe(0);
   });
 
+  it('parses the large Exness export shape with original_position_size and close_reason columns', () => {
+    const csv = `ticket,opening_time_utc,closing_time_utc,type,lots,original_position_size,symbol,opening_price,closing_price,stop_loss,take_profit,commission,swap,profit,equity,margin_level,close_reason
+1430623457,2025-03-07T12:56:46,2025-03-07T14:01:52,sell,0.02,0.02,XAUUSD,2921.12,2905.569,2927.909,2899.101,-0.14,,31.1,,,user`;
+    const { headers, rows } = parseCsv(csv);
+    expect(exnessAdapter.detect(headers.map((h) => h.toLowerCase()))).toBe(true);
+    const result = exnessAdapter.parseRow(rows[0]!);
+    if ('skip' in result) throw new Error('expected non-skip');
+    expect(result.brokerTicketId).toBe('1430623457');
+    expect(result.side).toBe('SHORT');
+    expect(result.symbol).toBe('XAUUSD');
+    expect(result.entryDate.toISOString()).toBe('2025-03-07T12:56:46.000Z');
+    expect(result.exitDate?.toISOString()).toBe('2025-03-07T14:01:52.000Z');
+    expect(result.pnl).toBeCloseTo(31.1 - 0.14);
+    expect(result.commission).toBeCloseTo(0.14);
+  });
+
   it('parses a losing buy', () => {
     const { rows } = parseCsv(SAMPLE);
     const result = exnessAdapter.parseRow(rows[1]!);
