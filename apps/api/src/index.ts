@@ -1,6 +1,6 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import { prisma } from '@repo/database';
 import authRouter from './routes/auth';
 import { authMiddleware } from './middleware/auth';
@@ -11,8 +11,6 @@ import tagsRouter from './routes/tags';
 import journalRouter from './routes/journal';
 import settingsRouter from './routes/settings';
 import accountsRouter from './routes/accounts';
-
-dotenv.config();
 
 if (!process.env.AUTH_SECRET) {
   console.error('FATAL: AUTH_SECRET is not set.');
