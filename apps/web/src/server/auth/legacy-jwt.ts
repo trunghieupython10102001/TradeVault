@@ -12,6 +12,10 @@ function getAuthSecret(): string {
   return secret;
 }
 
+export function signLegacyToken(payload: { id: string; email: string }): string {
+  return jwt.sign(payload, getAuthSecret(), { expiresIn: '7d' });
+}
+
 export function getUserIdFromRequest(req: Request): LegacyAuthResult {
   const header = req.headers.get('authorization');
   if (!header?.startsWith('Bearer ')) {
