@@ -1,5 +1,6 @@
 import { Router, Response } from 'express';
-import { prisma } from '@repo/database';
+import { Prisma, prisma } from '@repo/database';
+import { randomUUID } from 'crypto';
 import { AuthRequest } from '../middleware/auth';
 import { tradeSchema } from '../lib/validators';
 import { calculateRMultiple } from '../lib/calculations';
@@ -7,6 +8,7 @@ import { parseCsv } from '../lib/csvParser';
 import { detectAdapter, getAdapter, type NormalizedTrade } from '../lib/brokerAdapters';
 
 const router = Router();
+const IMPORT_BATCH_SIZE = 500;
 
 function formatTrade(t: any) {
   return {
@@ -21,6 +23,12 @@ function formatTrade(t: any) {
     pnlPercent: t.pnlPercent ? Number(t.pnlPercent) : null,
     rMultiple: t.rMultiple ? Number(t.rMultiple) : null,
   };
+}
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
+  return chunks;
 }
 
 // GET /trades
@@ -418,8 +426,27 @@ router.post('/import', async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const created: string[] = [];
-    const updated: string[] = [];
+    const parsedTrades: Array<{
+      rowNum: number;
+      brokerTicketId: string | null;
+      data: {
+        accountId: string;
+        symbol: string;
+        side: 'LONG' | 'SHORT';
+        status: 'OPEN' | 'CLOSED';
+        entryPrice: number;
+        exitPrice: number | null;
+        quantity: number;
+        stopLoss: number | null;
+        takeProfit: number | null;
+        commission: number;
+        pnl: number | null;
+        pnlPercent: null;
+        rMultiple: number | null;
+        entryDate: Date;
+        exitDate: Date | null;
+      };
+    }> = [];
     const skipped: { row: number; reason: string }[] = [];
 
     for (let i = 0; i < rows.length; i++) {
@@ -451,8 +478,8 @@ router.post('/import', async (req: AuthRequest, res: Response) => {
         const tradeData = {
           accountId,
           symbol: t.symbol,
-          side: t.side as any,
-          status: (t.exitDate ? 'CLOSED' : 'OPEN') as any,
+          side: t.side,
+          status: t.exitDate ? 'CLOSED' as const : 'OPEN' as const,
           entryPrice: t.entryPrice,
           exitPrice: t.exitPrice,
           quantity: t.quantity,
@@ -466,34 +493,89 @@ router.post('/import', async (req: AuthRequest, res: Response) => {
           exitDate: t.exitDate,
         };
 
-        if (t.brokerTicketId) {
-          const existing = await prisma.trade.findUnique({
-            where: { unique_user_broker_ticket: { userId, brokerTicketId: t.brokerTicketId } },
-            select: { id: true },
-          });
-          await prisma.trade.upsert({
-            where: { unique_user_broker_ticket: { userId, brokerTicketId: t.brokerTicketId } },
-            update: tradeData,
-            create: { userId, brokerTicketId: t.brokerTicketId, ...tradeData },
-          });
-          if (existing) updated.push(t.brokerTicketId);
-          else created.push(t.brokerTicketId);
-        } else {
-          await prisma.trade.create({ data: { userId, ...tradeData } });
-          created.push(`row-${rowNum}`);
-        }
+        parsedTrades.push({ rowNum, brokerTicketId: t.brokerTicketId, data: tradeData });
       } catch (err: any) {
         skipped.push({ row: rowNum, reason: err.message || 'Unknown error' });
       }
     }
 
+    const duplicateTickets = new Set<string>();
+    const uniqueByTicket = new Map<string, (typeof parsedTrades)[number]>();
+    const noTicketTrades: typeof parsedTrades = [];
+    for (const parsedTrade of parsedTrades) {
+      if (!parsedTrade.brokerTicketId) {
+        noTicketTrades.push(parsedTrade);
+        continue;
+      }
+      if (uniqueByTicket.has(parsedTrade.brokerTicketId)) duplicateTickets.add(parsedTrade.brokerTicketId);
+      uniqueByTicket.set(parsedTrade.brokerTicketId, parsedTrade);
+    }
+
+    const uniqueTicketTrades = Array.from(uniqueByTicket.values());
+    const existingTicketRows = uniqueTicketTrades.length > 0
+      ? await prisma.trade.findMany({
+          where: {
+            userId,
+            brokerTicketId: { in: uniqueTicketTrades.map((trade) => trade.brokerTicketId!) },
+          },
+          select: { brokerTicketId: true },
+        })
+      : [];
+    const existingTickets = new Set(existingTicketRows.map((trade) => trade.brokerTicketId).filter(Boolean) as string[]);
+
+    for (const batch of chunk(uniqueTicketTrades, IMPORT_BATCH_SIZE)) {
+      const values = batch.map((trade) => {
+        const d = trade.data;
+        return Prisma.sql`(
+          ${randomUUID()}, ${userId}, ${d.accountId}, ${trade.brokerTicketId}, ${d.symbol}, ${d.side}::"TradeSide", ${d.status}::"TradeStatus",
+          ${d.entryPrice}, ${d.exitPrice}, ${d.quantity}, ${d.stopLoss}, ${d.takeProfit}, ${d.commission}, ${d.pnl}, ${d.pnlPercent}, ${d.rMultiple},
+          ${d.entryDate}, ${d.exitDate}, NOW(), NOW()
+        )`;
+      });
+
+      await prisma.$executeRaw`
+        INSERT INTO "trades" (
+          "id", "user_id", "account_id", "broker_ticket_id", "symbol", "side", "status",
+          "entry_price", "exit_price", "quantity", "stop_loss", "take_profit", "commission", "pnl", "pnl_percent", "r_multiple",
+          "entry_date", "exit_date", "created_at", "updated_at"
+        ) VALUES ${Prisma.join(values)}
+        ON CONFLICT ("user_id", "broker_ticket_id") DO UPDATE SET
+          "account_id" = EXCLUDED."account_id",
+          "symbol" = EXCLUDED."symbol",
+          "side" = EXCLUDED."side",
+          "status" = EXCLUDED."status",
+          "entry_price" = EXCLUDED."entry_price",
+          "exit_price" = EXCLUDED."exit_price",
+          "quantity" = EXCLUDED."quantity",
+          "stop_loss" = EXCLUDED."stop_loss",
+          "take_profit" = EXCLUDED."take_profit",
+          "commission" = EXCLUDED."commission",
+          "pnl" = EXCLUDED."pnl",
+          "pnl_percent" = EXCLUDED."pnl_percent",
+          "r_multiple" = EXCLUDED."r_multiple",
+          "entry_date" = EXCLUDED."entry_date",
+          "exit_date" = EXCLUDED."exit_date",
+          "updated_at" = NOW()
+      `;
+    }
+
+    if (noTicketTrades.length > 0) {
+      await prisma.trade.createMany({
+        data: noTicketTrades.map((trade) => ({ userId, ...trade.data })),
+      });
+    }
+
+    const createdCount = uniqueTicketTrades.filter((trade) => !existingTickets.has(trade.brokerTicketId!)).length + noTicketTrades.length;
+    const updatedCount = uniqueTicketTrades.filter((trade) => existingTickets.has(trade.brokerTicketId!)).length;
+
     res.json({
       success: true,
       broker: adapter.name,
       brokerLabel: adapter.displayName,
-      imported: created.length + updated.length,
-      created: created.length,
-      updated: updated.length,
+      imported: createdCount + updatedCount,
+      created: createdCount,
+      updated: updatedCount,
+      duplicatesInFile: duplicateTickets.size,
       skipped: skipped.length,
       skippedDetails: skipped,
     });
