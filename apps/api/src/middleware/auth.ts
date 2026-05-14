@@ -1,14 +1,20 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'fallback-dev-secret';
-
 export interface AuthRequest extends Request {
   userId?: string;
 }
 
+export function getAuthSecret(): string {
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) {
+    throw new Error('AUTH_SECRET is not set. Refusing to start with a fallback secret.');
+  }
+  return secret;
+}
+
 export function signToken(payload: { id: string; email: string }): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign(payload, getAuthSecret(), { expiresIn: '7d' });
 }
 
 export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
@@ -20,7 +26,7 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
       return;
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; email: string };
+    const decoded = jwt.verify(token, getAuthSecret()) as { id: string; email: string };
     req.userId = decoded.id;
     next();
   } catch (error) {

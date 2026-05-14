@@ -148,7 +148,7 @@ export function calculateMetrics(
   const lossRate = losses.length / totalTrades;
   const expectancy = (winRate / 100) * avgWin - lossRate * avgLoss;
 
-  // Sharpe Ratio — daily grouping, no annualization (matches FTMO/broker platform)
+  // Sharpe Ratio — prefer daily grouping when dates exist, otherwise fall back to per-trade returns.
   let sharpeRatio: number | null = null;
   const dailyPnlMap: Record<string, number> = {};
   for (const trade of trades) {
@@ -160,11 +160,12 @@ export function calculateMetrics(
     }
   }
   const dailyValues = Object.values(dailyPnlMap);
-  if (dailyValues.length > 1) {
-    const dMean = dailyValues.reduce((a, b) => a + b, 0) / dailyValues.length;
-    const dVariance = dailyValues.reduce((acc, d) => acc + Math.pow(d - dMean, 2), 0) / (dailyValues.length - 1);
-    const dStdDev = Math.sqrt(dVariance);
-    sharpeRatio = dStdDev > 0 ? dMean / dStdDev : null;
+  const sharpeValues = dailyValues.length > 1 ? dailyValues : pnls;
+  if (sharpeValues.length > 1) {
+    const mean = sharpeValues.reduce((a, b) => a + b, 0) / sharpeValues.length;
+    const variance = sharpeValues.reduce((acc, value) => acc + Math.pow(value - mean, 2), 0) / (sharpeValues.length - 1);
+    const stdDev = Math.sqrt(variance);
+    sharpeRatio = stdDev > 0 ? mean / stdDev : null;
   }
 
   return {

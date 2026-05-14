@@ -14,8 +14,15 @@ import accountsRouter from './routes/accounts';
 
 dotenv.config();
 
+if (!process.env.AUTH_SECRET) {
+  console.error('FATAL: AUTH_SECRET is not set.');
+  process.exit(1);
+}
+
 const app = express();
 const port = process.env.PORT || 4000;
+
+app.set('trust proxy', 1);
 
 const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3000').split(',').map((s) => s.trim());
 app.use(cors({ origin: allowedOrigins, credentials: true }));

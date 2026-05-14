@@ -2,7 +2,8 @@ import { Router, Request, Response } from 'express';
 import { hash, compare } from 'bcryptjs';
 import { z } from 'zod';
 import { prisma } from '@repo/database';
-import { signToken } from '../middleware/auth';
+import { getAuthSecret, signToken } from '../middleware/auth';
+import { loginEmailLimiter, loginIpLimiter, registerLimiter } from '../middleware/rateLimit';
 
 const router = Router();
 
@@ -18,7 +19,7 @@ const loginSchema = z.object({
 });
 
 // POST /auth/register
-router.post('/register', async (req: Request, res: Response) => {
+router.post('/register', registerLimiter, async (req: Request, res: Response) => {
   try {
     const result = registerSchema.safeParse(req.body);
     if (!result.success) {
@@ -67,7 +68,7 @@ router.post('/register', async (req: Request, res: Response) => {
 });
 
 // POST /auth/login
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', loginIpLimiter, loginEmailLimiter, async (req: Request, res: Response) => {
   try {
     const result = loginSchema.safeParse(req.body);
     if (!result.success) {
@@ -114,7 +115,7 @@ router.get('/me', async (req: Request, res: Response) => {
     const token = authHeader.slice(7);
     const decoded = jwt.default.verify(
       token,
-      process.env.NEXTAUTH_SECRET || 'fallback-dev-secret'
+      getAuthSecret()
     ) as { id: string };
 
     const user = await prisma.user.findUnique({

@@ -10,10 +10,10 @@
     "db:seed": "prisma db seed"
   },
   "dependencies": {
-    "@prisma/client": "^5.0.0"
+    "@prisma/client": "^7.4.0"
   },
   "devDependencies": {
-    "prisma": "^5.0.0",
+    "prisma": "^7.4.0",
     "typescript": "^5.0.0",
     "@types/node": "^20.0.0"
   }
