@@ -24,3 +24,4 @@ IMPROVEMENT_PLAN.md
 .DS_Store
 *.log
 __pycache__
+*.pem
