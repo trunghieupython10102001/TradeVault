@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
@@ -652,7 +653,7 @@ export default function TradeLogPage() {
                                       className={styles.expandThumbBtn}
                                       onClick={(e) => { e.stopPropagation(); setLightboxUrl(img.url); }}
                                     >
-                                      <img src={img.url} alt={img.caption || ''} className={styles.expandThumb} />
+                                      <Image src={img.url} alt={img.caption || ''} width={96} height={72} className={styles.expandThumb} unoptimized />
                                     </button>
                                   )
                                 ))}
@@ -815,10 +816,13 @@ export default function TradeLogPage() {
           <button className={styles.lightboxClose} onClick={() => setLightboxUrl(null)}>
             <X size={22} />
           </button>
-          <img
+          <Image
             src={lightboxUrl}
             alt="Trade screenshot"
+            width={1200}
+            height={900}
             className={styles.lightboxImg}
+            unoptimized
             onClick={(e) => e.stopPropagation()}
           />
         </div>

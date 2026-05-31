@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { Camera, X, Plus, Link as LinkIcon } from 'lucide-react';
 import styles from './ImageUpload.module.css';
 
@@ -226,10 +227,13 @@ export default function ImageUpload({ attachments, onChange }: ImageUploadProps)
                 <X size={12} />
               </button>
               {att.type === 'image' ? (
-                <img
+                <Image
                   src={att.url}
                   alt={att.caption || 'Trade screenshot'}
+                  width={160}
+                  height={120}
                   className={styles.previewImage}
+                  unoptimized
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = 'none';
                     (e.target as HTMLImageElement).nextElementSibling?.removeAttribute('hidden');
