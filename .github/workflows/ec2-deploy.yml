@@ -63,7 +63,7 @@ jobs:
         run: npm run test
 
       - name: Build
-        run: npm run build
+        run: npm run build --workspace=trading-journal
 
   deploy:
     name: Deploy to EC2
