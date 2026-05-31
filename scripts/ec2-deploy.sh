@@ -15,7 +15,7 @@ if [[ "${SKIP_GIT_PULL}" != "true" ]]; then
   git pull --ff-only origin "${BRANCH}"
 fi
 
-npm ci --include=dev
+npm install --include=dev
 
 set -a
 source apps/web/.env
