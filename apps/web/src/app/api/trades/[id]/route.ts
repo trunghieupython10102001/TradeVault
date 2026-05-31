@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { Prisma, TradeStatus, prisma } from '@repo/database';
+import { Decimal } from '@prisma/client/runtime/client';
+import { prisma } from '@repo/database';
 import { calculateRMultiple } from '@/server/lib/calculations';
 import { formatTrade, getAuthenticatedUserId } from '../helpers';
 
@@ -52,11 +53,11 @@ async function handleTradeUpdate(request: Request, context: RouteContext) {
     const stopLoss = body.stopLoss !== undefined ? Number(body.stopLoss) : (currentTrade.stopLoss ? Number(currentTrade.stopLoss) : null);
 
     if (exitPrice) {
-      if (grossPnl != null) pnl = new Prisma.Decimal(grossPnl - commission);
-      status = TradeStatus.CLOSED;
+      if (grossPnl != null) pnl = new Decimal(grossPnl - commission);
+      status = 'CLOSED';
     } else {
       pnl = null;
-      status = TradeStatus.OPEN;
+      status = 'OPEN';
     }
 
     if (exitPrice && stopLoss) {
@@ -68,12 +69,12 @@ async function handleTradeUpdate(request: Request, context: RouteContext) {
         stopLoss,
         commission,
       });
-      rMultiple = rRaw != null && Math.abs(rRaw) < 9999 ? new Prisma.Decimal(rRaw) : null;
+      rMultiple = rRaw != null && Math.abs(rRaw) < 9999 ? new Decimal(rRaw) : null;
     } else {
       rMultiple = null;
     }
 
-    if (body.status === TradeStatus.OPEN || body.status === TradeStatus.CLOSED) status = body.status;
+    if (body.status === 'OPEN' || body.status === 'CLOSED') status = body.status;
     if (body.entryDate && typeof body.entryDate === 'string') body.entryDate = new Date(body.entryDate);
     if (body.exitDate && typeof body.exitDate === 'string') body.exitDate = new Date(body.exitDate);
 
@@ -93,7 +94,7 @@ async function handleTradeUpdate(request: Request, context: RouteContext) {
 
     const updatedTrade = await prisma.trade.update({
       where: { id },
-      data: { ...body, status, pnl, pnlPercent: null, rMultiple } as Prisma.TradeUpdateInput,
+      data: { ...body, status, pnl, pnlPercent: null, rMultiple } as never,
       include: { images: true },
     });
 

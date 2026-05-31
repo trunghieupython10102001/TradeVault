@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { Prisma, TradeSide, TradeStatus, prisma } from '@repo/database';
+import { prisma } from '@repo/database';
 import { tradeSchema } from '@/server/lib/validators';
 import { calculateRMultiple } from '@/server/lib/calculations';
 import { formatTrade, getAuthenticatedUserId } from './helpers';
@@ -22,11 +22,11 @@ export async function GET(request: Request) {
     const take = hasRange ? 1000 : limitNum;
     const skip = hasRange ? 0 : (pageNum - 1) * limitNum;
 
-    const where: Prisma.TradeWhereInput = { userId: auth.userId };
+    const where: { userId: string; symbol?: { contains: string; mode: 'insensitive' }; side?: 'LONG' | 'SHORT'; status?: 'OPEN' | 'CLOSED'; accountId?: string; exitDate?: { gte: Date; lte: Date } } = { userId: auth.userId };
 
     if (search) where.symbol = { contains: search, mode: 'insensitive' };
-    if (side === TradeSide.LONG || side === TradeSide.SHORT) where.side = side;
-    if (status === TradeStatus.OPEN || status === TradeStatus.CLOSED) where.status = status;
+    if (side === 'LONG' || side === 'SHORT') where.side = side;
+    if (status === 'OPEN' || status === 'CLOSED') where.status = status;
     if (accountId && accountId !== 'ALL') where.accountId = accountId;
     if (hasRange) {
       const fromDate = new Date(from);

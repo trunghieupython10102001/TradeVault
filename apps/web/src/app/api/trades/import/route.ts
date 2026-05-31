@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { NextResponse } from 'next/server';
-import { Prisma, prisma } from '@repo/database';
+import { Prisma } from '@prisma/client';
+import { prisma } from '@repo/database';
 import { parseCsv } from '@/server/lib/csvParser';
 import { calculateRMultiple } from '@/server/lib/calculations';
 import { detectAdapter, getAdapter, type NormalizedTrade } from '@/server/lib/brokerAdapters';

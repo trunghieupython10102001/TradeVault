@@ -2,6 +2,27 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@repo/database';
 import { formatTrade, getAuthenticatedUserId } from '../helpers';
 
+type ExportTrade = {
+  symbol: string;
+  side: string;
+  status: string;
+  entryPrice: unknown;
+  exitPrice?: unknown;
+  quantity: unknown;
+  commission: unknown;
+  pnl?: unknown;
+  rMultiple?: unknown;
+  strategy?: string | null;
+  timeframe?: string | null;
+  rating?: number | null;
+  entryDate?: Date | string | null;
+  exitDate?: Date | string | null;
+  setupDescription?: string | null;
+  notes?: string | null;
+  mistakes?: string | null;
+  lessons?: string | null;
+};
+
 export async function GET(request: Request) {
   const auth = getAuthenticatedUserId(request);
   if (auth.response) return auth.response;
@@ -13,7 +34,7 @@ export async function GET(request: Request) {
       where: { userId: auth.userId },
       orderBy: { entryDate: 'desc' },
       include: { images: true },
-    });
+    }) as ExportTrade[];
 
     if (format === 'csv') {
       const headers = [
@@ -26,7 +47,7 @@ export async function GET(request: Request) {
         const s = String(v).replace(/"/g, '""');
         return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
       };
-      const rows = trades.map((t) => [
+      const rows = trades.map((t: ExportTrade) => [
         escape(t.symbol),
         escape(t.side),
         escape(t.status),

@@ -15,7 +15,8 @@ if [[ "${SKIP_GIT_PULL}" != "true" ]]; then
   git pull --ff-only origin "${BRANCH}"
 fi
 
-npm install --include=dev
+rm -rf node_modules apps/web/node_modules packages/database/node_modules
+npm ci --include=dev || npm install --include=dev
 
 set -a
 source apps/web/.env

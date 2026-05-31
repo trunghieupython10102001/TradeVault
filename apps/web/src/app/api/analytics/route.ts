@@ -166,14 +166,14 @@ export async function GET(request: Request) {
 
     // Statistics panel metrics
     const metrics = calculateMetrics(
-      trades.map((t) => ({
+      trades.map((t: AnalyticsTrade) => ({
         pnl: Number(t.pnl),
         rMultiple: t.rMultiple ? Number(t.rMultiple) : null,
         exitDate: t.exitDate,
       })),
       startingEquity
     );
-    const totalLots = round2(trades.reduce((s: number, t) => s + (Number(t.quantity) || 0), 0));
+    const totalLots = round2(trades.reduce((s: number, t: AnalyticsTrade) => s + (Number(t.quantity) || 0), 0));
     const equity = round2(startingEquity + metrics.totalPnl);
 
     const stats = {
@@ -251,7 +251,7 @@ export async function GET(request: Request) {
     }).filter(Boolean);
 
     const maxDrawdown = drawdownPoints.length > 0 ? Math.min(...drawdownPoints) : 0;
-    const byDayHour = aggregateByDayHour(trades.map((t) => ({ ...t, pnl: t.pnl !== null ? Number(t.pnl) : null })));
+    const byDayHour = aggregateByDayHour(trades.map((t: AnalyticsTrade) => ({ ...t, pnl: t.pnl !== null ? Number(t.pnl) : null })));
 
     return NextResponse.json({
       stats,
