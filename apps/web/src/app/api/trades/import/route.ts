@@ -9,6 +9,32 @@ import { chunk, getAuthenticatedUserId } from '../helpers';
 
 const IMPORT_BATCH_SIZE = 500;
 
+type ParsedTrade = {
+  rowNum: number;
+  brokerTicketId: string | null;
+  data: {
+    accountId: string;
+    symbol: string;
+    side: 'LONG' | 'SHORT';
+    status: 'OPEN' | 'CLOSED';
+    entryPrice: number;
+    exitPrice: number | null;
+    quantity: number;
+    stopLoss: number | null;
+    takeProfit: number | null;
+    commission: number;
+    pnl: number | null;
+    pnlPercent: null;
+    rMultiple: number | null;
+    entryDate: Date;
+    exitDate: Date | null;
+  };
+};
+
+type ExistingTicketRow = {
+  brokerTicketId: string | null;
+};
+
 export async function POST(request: Request) {
   const auth = getAuthenticatedUserId(request);
   if (auth.response) return auth.response;
@@ -59,27 +85,7 @@ export async function POST(request: Request) {
       await prisma.account.update({ where: { id: accountId }, data: { initialBalance: resolvedInitialBalance } });
     }
 
-    const parsedTrades: Array<{
-      rowNum: number;
-      brokerTicketId: string | null;
-      data: {
-        accountId: string;
-        symbol: string;
-        side: 'LONG' | 'SHORT';
-        status: 'OPEN' | 'CLOSED';
-        entryPrice: number;
-        exitPrice: number | null;
-        quantity: number;
-        stopLoss: number | null;
-        takeProfit: number | null;
-        commission: number;
-        pnl: number | null;
-        pnlPercent: null;
-        rMultiple: number | null;
-        entryDate: Date;
-        exitDate: Date | null;
-      };
-    }> = [];
+    const parsedTrades: ParsedTrade[] = [];
     const skipped: { row: number; reason: string }[] = [];
 
     for (let i = 0; i < rows.length; i++) {
@@ -145,14 +151,14 @@ export async function POST(request: Request) {
     const uniqueTicketTrades = Array.from(uniqueByTicket.values());
     const existingTicketRows = uniqueTicketTrades.length > 0
       ? await prisma.trade.findMany({
-          where: { userId: auth.userId, brokerTicketId: { in: uniqueTicketTrades.map((trade) => trade.brokerTicketId!) } },
+          where: { userId: auth.userId, brokerTicketId: { in: uniqueTicketTrades.map((trade: ParsedTrade) => trade.brokerTicketId!) } },
           select: { brokerTicketId: true },
-        })
+        }) as ExistingTicketRow[]
       : [];
-    const existingTickets = new Set(existingTicketRows.map((trade) => trade.brokerTicketId).filter(Boolean) as string[]);
+    const existingTickets = new Set(existingTicketRows.map((trade: ExistingTicketRow) => trade.brokerTicketId).filter(Boolean) as string[]);
 
     for (const batch of chunk(uniqueTicketTrades, IMPORT_BATCH_SIZE)) {
-      const values = batch.map((trade) => {
+      const values = batch.map((trade: ParsedTrade) => {
         const d = trade.data;
         return Prisma.sql`(
           ${randomUUID()}, ${auth.userId}, ${d.accountId}, ${trade.brokerTicketId}, ${d.symbol}, ${d.side}::"TradeSide", ${d.status}::"TradeStatus",
@@ -188,11 +194,11 @@ export async function POST(request: Request) {
     }
 
     if (noTicketTrades.length > 0) {
-      await prisma.trade.createMany({ data: noTicketTrades.map((trade) => ({ userId: auth.userId, ...trade.data })) });
+      await prisma.trade.createMany({ data: noTicketTrades.map((trade: ParsedTrade) => ({ userId: auth.userId, ...trade.data })) });
     }
 
-    const createdCount = uniqueTicketTrades.filter((trade) => !existingTickets.has(trade.brokerTicketId!)).length + noTicketTrades.length;
-    const updatedCount = uniqueTicketTrades.filter((trade) => existingTickets.has(trade.brokerTicketId!)).length;
+    const createdCount = uniqueTicketTrades.filter((trade: ParsedTrade) => !existingTickets.has(trade.brokerTicketId!)).length + noTicketTrades.length;
+    const updatedCount = uniqueTicketTrades.filter((trade: ParsedTrade) => existingTickets.has(trade.brokerTicketId!)).length;
 
     return NextResponse.json({
       success: true,
