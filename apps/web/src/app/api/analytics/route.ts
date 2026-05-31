@@ -8,6 +8,17 @@ import { aggregateByDayHour } from '@/server/lib/analytics-helpers';
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const SESSION_ORDER = ['Asian', 'London', 'New York', 'Off Hours'] as const;
 
+type AnalyticsTrade = {
+  id: string;
+  pnl: unknown;
+  rMultiple: unknown;
+  strategy: string | null;
+  symbol: string;
+  quantity: unknown;
+  entryDate: Date | null;
+  exitDate: Date | null;
+};
+
 function getPeriodStart(period: string): Date | null {
   const now = new Date();
   switch (period.toLowerCase()) {
@@ -75,7 +86,7 @@ export async function GET(request: Request) {
           entryDate: true,
           exitDate: true,
         },
-      }),
+      }) as Promise<AnalyticsTrade[]>,
       prisma.account.findFirst({
         where: { userId, isDefault: true },
         select: { initialBalance: true },
@@ -155,14 +166,14 @@ export async function GET(request: Request) {
 
     // Statistics panel metrics
     const metrics = calculateMetrics(
-      trades.map((t: (typeof trades)[number]) => ({
+      trades.map((t) => ({
         pnl: Number(t.pnl),
         rMultiple: t.rMultiple ? Number(t.rMultiple) : null,
         exitDate: t.exitDate,
       })),
       startingEquity
     );
-    const totalLots = round2(trades.reduce((s, t) => s + (Number(t.quantity) || 0), 0));
+    const totalLots = round2(trades.reduce((s: number, t) => s + (Number(t.quantity) || 0), 0));
     const equity = round2(startingEquity + metrics.totalPnl);
 
     const stats = {
