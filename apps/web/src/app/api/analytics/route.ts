@@ -155,7 +155,7 @@ export async function GET(request: Request) {
 
     // Statistics panel metrics
     const metrics = calculateMetrics(
-      trades.map((t) => ({
+      trades.map((t: (typeof trades)[number]) => ({
         pnl: Number(t.pnl),
         rMultiple: t.rMultiple ? Number(t.rMultiple) : null,
         exitDate: t.exitDate,

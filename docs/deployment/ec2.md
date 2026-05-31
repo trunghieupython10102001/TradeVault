@@ -1,6 +1,6 @@
 # EC2 Deployment
 
-This project now deploys `apps/web` to EC2 with PM2 + Nginx. If the frontend stays on Vercel, set `API_ORIGIN` in Vercel so `/api/*` rewrites to EC2.
+This project now deploys `apps/web` to EC2 with Node 24, PM2, and Nginx. If the frontend stays on Vercel, set `API_ORIGIN` in Vercel so `/api/*` rewrites to EC2.
 
 ## Local SSH Key
 

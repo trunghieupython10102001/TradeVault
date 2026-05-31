@@ -25,3 +25,4 @@ IMPROVEMENT_PLAN.md
 *.log
 __pycache__
 *.pem
+.vercel
