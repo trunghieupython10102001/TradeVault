@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ec2-deploy-main
+  group: ec2-deploy-main-v2
   cancel-in-progress: true
 
 jobs:
