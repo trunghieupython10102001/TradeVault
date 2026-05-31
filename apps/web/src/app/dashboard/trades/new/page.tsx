@@ -60,7 +60,7 @@ export default function NewTradePage() {
       if (settings?.settings?.strategies?.length) {
         setStrategies(settings.settings.strategies);
       }
-      const defaultAcc = accs.find((a: any) => a.isDefault);
+      const defaultAcc = (accs as { id: string; isDefault: boolean }[]).find((a) => a.isDefault);
       if (defaultAcc) setAccountId(defaultAcc.id);
     });
   }, []);

@@ -31,10 +31,43 @@ import styles from './page.module.css';
 
 const PAGE_SIZE = 25;
 
+type TradeImage = {
+  id: string;
+  url: string;
+  caption?: string | null;
+  type: string;
+};
+
+type Trade = {
+  id: string;
+  symbol: string;
+  side: 'LONG' | 'SHORT';
+  status: 'OPEN' | 'CLOSED';
+  entryPrice: number;
+  exitPrice?: number | null;
+  quantity: number;
+  commission: number;
+  stopLoss?: number | null;
+  takeProfit?: number | null;
+  pnl?: number | null;
+  rMultiple?: number | null;
+  entryDate: string | Date;
+  exitDate?: string | Date | null;
+  strategy?: string | null;
+  timeframe?: string | null;
+  rating?: number | null;
+  setupDescription?: string | null;
+  notes?: string | null;
+  mistakes?: string | null;
+  lessons?: string | null;
+  account?: { name?: string | null } | null;
+  images?: TradeImage[];
+};
+
 export default function TradeLogPage() {
   const router = useRouter();
   const toast = useToast();
-  const [trades, setTrades] = useState<Record<string, any>[]>([]);
+  const [trades, setTrades] = useState<Trade[]>([]);
   const [accounts, setAccounts] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -489,12 +522,12 @@ export default function TradeLogPage() {
                         </span>
                       </td>
                       <td>
-                        {trade.rating > 0 ? (
+                        {(trade.rating ?? 0) > 0 ? (
                           <div className={styles.stars}>
                             {[1, 2, 3, 4, 5].map((s) => (
                               <span
                                 key={s}
-                                className={s <= trade.rating ? styles.starFilled : styles.starEmpty}
+                                className={s <= (trade.rating ?? 0) ? styles.starFilled : styles.starEmpty}
                               >
                                 ★
                               </span>
@@ -605,7 +638,7 @@ export default function TradeLogPage() {
                             {/* Images & Charts */}
                             {trade.images && trade.images.length > 0 && (
                               <div className={styles.expandImages}>
-                                {trade.images.map((img: any) => (
+                                {trade.images.map((img) => (
                                   img.type === 'tradingview' ? (
                                     <div key={img.id} className={styles.expandTvCard}>
                                       <ExternalLink size={14} />

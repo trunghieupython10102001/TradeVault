@@ -124,8 +124,8 @@ export async function POST(request: Request) {
             exitDate: t.exitDate,
           },
         });
-      } catch (err: any) {
-        skipped.push({ row: rowNum, reason: err.message || 'Unknown error' });
+      } catch (err: unknown) {
+        skipped.push({ row: rowNum, reason: err instanceof Error ? err.message : 'Unknown error' });
       }
     }
 

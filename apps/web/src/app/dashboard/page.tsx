@@ -276,7 +276,7 @@ export default function Dashboard() {
                     contentStyle={{ backgroundColor: 'var(--chart-tooltip-bg)', border: '1px solid var(--chart-tooltip-border)', borderRadius: '10px', fontSize: '12px', boxShadow: 'var(--shadow-md)' }}
                     itemStyle={{ color: 'var(--chart-tooltip-text)' }}
                     labelStyle={{ color: 'var(--chart-tooltip-label)', marginBottom: '4px', fontSize: '11px' }}
-                    formatter={(v: any) => [`$${Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Equity']}
+                    formatter={(v: unknown) => [`$${Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Equity']}
                   />
                   <Area
                     type="monotone"

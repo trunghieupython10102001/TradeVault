@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@repo/database';
+import { Prisma, TradeStatus, prisma } from '@repo/database';
 import { calculateRMultiple } from '@/server/lib/calculations';
 import { formatTrade, getAuthenticatedUserId } from '../helpers';
 
@@ -32,7 +32,7 @@ async function handleTradeUpdate(request: Request, context: RouteContext) {
 
   try {
     const { id } = await context.params;
-    const body = { ...(await request.json()) };
+    const body = { ...(await request.json()) } as Record<string, unknown>;
     const images = body.images as { url: string; caption?: string | null; type?: string }[] | undefined;
     delete body.images;
     delete body.tagIds;
@@ -47,33 +47,33 @@ async function handleTradeUpdate(request: Request, context: RouteContext) {
     const grossPnl = body.grossPnl != null ? Number(body.grossPnl) : null;
     delete body.grossPnl;
 
-    const exitPrice = body.exitPrice !== undefined ? body.exitPrice : (currentTrade.exitPrice ? Number(currentTrade.exitPrice) : null);
+    const exitPrice = body.exitPrice !== undefined ? Number(body.exitPrice) : (currentTrade.exitPrice ? Number(currentTrade.exitPrice) : null);
     const commission = body.commission !== undefined ? Number(body.commission) : Number(currentTrade.commission);
-    const stopLoss = body.stopLoss !== undefined ? body.stopLoss : (currentTrade.stopLoss ? Number(currentTrade.stopLoss) : null);
+    const stopLoss = body.stopLoss !== undefined ? Number(body.stopLoss) : (currentTrade.stopLoss ? Number(currentTrade.stopLoss) : null);
 
     if (exitPrice) {
-      if (grossPnl != null) pnl = (grossPnl - commission) as any;
-      status = 'CLOSED' as any;
+      if (grossPnl != null) pnl = new Prisma.Decimal(grossPnl - commission);
+      status = TradeStatus.CLOSED;
     } else {
       pnl = null;
-      status = 'OPEN' as any;
+      status = TradeStatus.OPEN;
     }
 
     if (exitPrice && stopLoss) {
       const rRaw = calculateRMultiple({
         side: (body.side || currentTrade.side) as 'LONG' | 'SHORT',
-        entryPrice: body.entryPrice !== undefined ? body.entryPrice : Number(currentTrade.entryPrice),
+        entryPrice: body.entryPrice !== undefined ? Number(body.entryPrice) : Number(currentTrade.entryPrice),
         exitPrice,
-        quantity: body.quantity !== undefined ? body.quantity : Number(currentTrade.quantity),
+        quantity: body.quantity !== undefined ? Number(body.quantity) : Number(currentTrade.quantity),
         stopLoss,
         commission,
       });
-      rMultiple = rRaw != null && Math.abs(rRaw) < 9999 ? rRaw as any : null;
+      rMultiple = rRaw != null && Math.abs(rRaw) < 9999 ? new Prisma.Decimal(rRaw) : null;
     } else {
       rMultiple = null;
     }
 
-    if (body.status) status = body.status;
+    if (body.status === TradeStatus.OPEN || body.status === TradeStatus.CLOSED) status = body.status;
     if (body.entryDate && typeof body.entryDate === 'string') body.entryDate = new Date(body.entryDate);
     if (body.exitDate && typeof body.exitDate === 'string') body.exitDate = new Date(body.exitDate);
 
@@ -93,7 +93,7 @@ async function handleTradeUpdate(request: Request, context: RouteContext) {
 
     const updatedTrade = await prisma.trade.update({
       where: { id },
-      data: { ...body, status, pnl, pnlPercent: null, rMultiple },
+      data: { ...body, status, pnl, pnlPercent: null, rMultiple } as Prisma.TradeUpdateInput,
       include: { images: true },
     });
 

@@ -10,7 +10,6 @@ import {
   Plus,
   Trash2,
   Check,
-  Tag,
 } from 'lucide-react';
 import Topbar from '@/components/layout/Topbar';
 import { apiFetch } from '@/lib/api';
@@ -60,7 +59,7 @@ const defaultAssetClasses = ['Stocks', 'Options', 'Futures', 'Forex', 'Crypto', 
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile');
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [, setProfile] = useState<Profile | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);

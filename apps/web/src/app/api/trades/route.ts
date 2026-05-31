@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@repo/database';
+import { Prisma, TradeSide, TradeStatus, prisma } from '@repo/database';
 import { tradeSchema } from '@/server/lib/validators';
 import { calculateRMultiple } from '@/server/lib/calculations';
 import { formatTrade, getAuthenticatedUserId } from './helpers';
@@ -22,11 +22,11 @@ export async function GET(request: Request) {
     const take = hasRange ? 1000 : limitNum;
     const skip = hasRange ? 0 : (pageNum - 1) * limitNum;
 
-    const where: any = { userId: auth.userId };
+    const where: Prisma.TradeWhereInput = { userId: auth.userId };
 
     if (search) where.symbol = { contains: search, mode: 'insensitive' };
-    if (side && side !== 'ALL') where.side = side as any;
-    if (status && status !== 'ALL') where.status = status as any;
+    if (side === TradeSide.LONG || side === TradeSide.SHORT) where.side = side;
+    if (status === TradeStatus.OPEN || status === TradeStatus.CLOSED) where.status = status;
     if (accountId && accountId !== 'ALL') where.accountId = accountId;
     if (hasRange) {
       const fromDate = new Date(from);
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
     }) : null;
     const rMultiple = rMultipleRaw != null && Math.abs(rMultipleRaw) < 9999 ? rMultipleRaw : null;
 
-    let tradeStatus = data.status as any;
+    let tradeStatus = data.status;
     if (data.exitPrice && data.exitDate) tradeStatus = 'CLOSED';
 
     const images = body.images as { url: string; caption?: string | null; type?: string }[] | undefined;
@@ -114,8 +114,8 @@ export async function POST(request: Request) {
         userId: auth.userId,
         accountId: accountId!,
         symbol: data.symbol,
-        side: data.side as any,
-        status: tradeStatus as any,
+        side: data.side,
+        status: tradeStatus,
         entryPrice: data.entryPrice,
         exitPrice: data.exitPrice,
         quantity: data.quantity,

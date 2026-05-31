@@ -1,6 +1,18 @@
 import { NextResponse } from 'next/server';
 import { getUserIdFromRequest } from '@/server/auth/legacy-jwt';
 
+type TradeWithNumericFields = {
+  entryPrice: unknown;
+  exitPrice?: unknown;
+  quantity: unknown;
+  stopLoss?: unknown;
+  takeProfit?: unknown;
+  commission: unknown;
+  pnl?: unknown;
+  pnlPercent?: unknown;
+  rMultiple?: unknown;
+};
+
 export function getAuthenticatedUserId(request: Request) {
   const auth = getUserIdFromRequest(request);
   if (auth.error) {
@@ -12,7 +24,7 @@ export function getAuthenticatedUserId(request: Request) {
   return { userId: auth.userId };
 }
 
-export function formatTrade(t: any) {
+export function formatTrade<T extends TradeWithNumericFields>(t: T) {
   return {
     ...t,
     entryPrice: Number(t.entryPrice),

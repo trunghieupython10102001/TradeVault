@@ -21,12 +21,12 @@ export async function GET(request: Request) {
         'Commission', 'P&L', 'R-Multiple', 'Strategy', 'Timeframe', 'Rating',
         'Entry Date', 'Exit Date', 'Setup Description', 'Notes', 'Mistakes', 'Lessons',
       ];
-      const escape = (v: any) => {
+      const escape = (v: unknown) => {
         if (v == null) return '';
         const s = String(v).replace(/"/g, '""');
         return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
       };
-      const rows = trades.map((t: any) => [
+      const rows = trades.map((t) => [
         escape(t.symbol),
         escape(t.side),
         escape(t.status),

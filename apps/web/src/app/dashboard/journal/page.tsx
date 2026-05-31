@@ -105,8 +105,7 @@ export default function JournalPage() {
         setEntries((prev) => {
           const filtered = prev.filter((e) => e.id !== saved.id);
           return [saved, ...filtered].sort(
-            (a: any, b: any) =>
-              new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime()
+            (a, b) => new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime()
           );
         });
         toast.success(editingEntry ? 'Journal entry updated' : 'Journal entry saved');

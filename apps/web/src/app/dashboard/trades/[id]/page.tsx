@@ -19,19 +19,53 @@ import { formatCurrency } from '@/lib/calculations';
 import { formatDate } from '@/lib/utils';
 import styles from './page.module.css';
 
+type TradeImage = {
+  id: string;
+  url: string;
+  caption?: string | null;
+  type: string;
+};
+
+type TradeDetail = {
+  id: string;
+  symbol: string;
+  side: 'LONG' | 'SHORT';
+  status: 'OPEN' | 'CLOSED';
+  entryPrice: number;
+  exitPrice?: number | null;
+  quantity: number;
+  commission: number;
+  stopLoss?: number | null;
+  takeProfit?: number | null;
+  pnl?: number | null;
+  rMultiple?: number | null;
+  entryDate: string | Date;
+  exitDate?: string | Date | null;
+  strategy?: string | null;
+  timeframe?: string | null;
+  rating?: number | null;
+  setupDescription?: string | null;
+  notes?: string | null;
+  mistakes?: string | null;
+  lessons?: string | null;
+  createdAt: string | Date;
+  account?: { name?: string | null } | null;
+  images?: TradeImage[];
+};
+
 export default function TradeDetailPage() {
   const params = useParams();
   const router = useRouter();
   const tradeId = params.id as string;
 
-  const [trade, setTrade] = useState<Record<string, any> | null>(null);
+  const [trade, setTrade] = useState<TradeDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const imageAttachments = trade?.images?.filter(
-    (img: Record<string, string>) => img.type !== 'tradingview'
+    (img) => img.type !== 'tradingview'
   ) ?? [];
 
   useEffect(() => {
@@ -274,7 +308,7 @@ export default function TradeDetailPage() {
           <div className={`${styles.section} ${styles.fullWidth}`} style={{ marginBottom: 'var(--space-6)' }}>
             <h2 className={styles.sectionTitle}>Screenshots & Charts</h2>
             <div className={styles.attachmentGrid}>
-              {trade.images.map((img: Record<string, string>, i: number) => {
+              {trade.images.map((img, i: number) => {
                 const isTv = img.type === 'tradingview';
                 return isTv ? (
                   <a
@@ -301,7 +335,7 @@ export default function TradeDetailPage() {
                       src={img.url}
                       alt={img.caption || `Trade screenshot ${i + 1}`}
                       className={styles.attachmentImage}
-                      onClick={() => setLightboxIndex(imageAttachments.findIndex((a: Record<string, string>) => a.id === img.id || a.url === img.url))}
+                      onClick={() => setLightboxIndex(imageAttachments.findIndex((a) => a.id === img.id || a.url === img.url))}
                     />
                     {img.caption && (
                       <span className={styles.attachmentCaption}>{img.caption}</span>
