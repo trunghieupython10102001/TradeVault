@@ -8,6 +8,7 @@ import DateTimePicker from '@/components/ui/DateTimePicker';
 import ImageUpload, { TradeAttachment } from '@/components/ui/ImageUpload';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/lib/toast-context';
+import ComboBox from '@/components/ui/ComboBox';
 import styles from './page.module.css';
 
 const timeframes = ['1m', '5m', '15m', '1H', '4H', 'Daily', 'Weekly'];
@@ -40,6 +41,8 @@ export default function NewTradePage() {
   const [attachments, setAttachments] = useState<TradeAttachment[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [symbols, setSymbols] = useState<string[]>([]);
+  const [timezone, setTimezone] = useState('UTC');
 
   // Account + Tag + Strategy lists
   const [accounts, setAccounts] = useState<{ id: string; name: string; isDefault: boolean }[]>([]);
@@ -54,12 +57,17 @@ export default function NewTradePage() {
       apiFetch('/api/accounts').then((r) => r.ok ? r.json() : []),
       apiFetch('/api/tags').then((r) => r.ok ? r.json() : []),
       apiFetch('/api/settings').then((r) => r.ok ? r.json() : null),
-    ]).then(([accs, tgs, settings]) => {
+      apiFetch('/api/trades/symbols').then((r) => r.ok ? r.json() : []),
+    ]).then(([accs, tgs, settings, syms]) => {
       setAccounts(accs);
       setTags(tgs);
       if (settings?.settings?.strategies?.length) {
         setStrategies(settings.settings.strategies);
       }
+      if (settings?.settings?.timezone) {
+        setTimezone(settings.settings.timezone);
+      }
+      setSymbols(syms);
       const defaultAcc = (accs as { id: string; isDefault: boolean }[]).find((a) => a.isDefault);
       if (defaultAcc) setAccountId(defaultAcc.id);
     });
@@ -163,14 +171,13 @@ export default function NewTradePage() {
             <div className={styles.grid2}>
               <div className={styles.field}>
                 <label className={styles.label}>Symbol *</label>
-                <input
-                  type="text"
-                  placeholder="e.g. AAPL"
-                  className={styles.input}
-                  required
-                  style={{ textTransform: 'uppercase' }}
+                <ComboBox
                   value={symbol}
-                  onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                  onChange={setSymbol}
+                  suggestions={symbols}
+                  placeholder="e.g. AAPL"
+                  required
+                  uppercase
                 />
               </div>
               <div className={styles.field}>
@@ -224,11 +231,11 @@ export default function NewTradePage() {
               </div>
               <div className={styles.field}>
                 <label className={styles.label}>Entry Date *</label>
-                <DateTimePicker value={entryDate} onChange={setEntryDate} placeholder="Select entry date" required />
+                <DateTimePicker value={entryDate} onChange={setEntryDate} placeholder="Select entry date" required timezone={timezone} />
               </div>
               <div className={styles.field}>
                 <label className={styles.label}>Exit Date</label>
-                <DateTimePicker value={exitDate} onChange={setExitDate} placeholder="Select exit date" disabled={status === 'OPEN'} />
+                <DateTimePicker value={exitDate} onChange={setExitDate} placeholder="Select exit date" disabled={status === 'OPEN'} timezone={timezone} />
               </div>
             </div>
 
@@ -258,10 +265,12 @@ export default function NewTradePage() {
             <div className={styles.grid2}>
               <div className={styles.field}>
                 <label className={styles.label}>Strategy</label>
-                <select className={styles.select} value={strategy} onChange={(e) => setStrategy(e.target.value)}>
-                  <option value="">Select strategy...</option>
-                  {strategies.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <ComboBox
+                  value={strategy}
+                  onChange={setStrategy}
+                  suggestions={strategies}
+                  placeholder="Select or type strategy..."
+                />
               </div>
               <div className={styles.field}>
                 <label className={styles.label}>Timeframe</label>

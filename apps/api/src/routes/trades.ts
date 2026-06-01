@@ -12,6 +12,22 @@ import { detectAdapter, getAdapter, type NormalizedTrade } from '../lib/brokerAd
 const router = Router();
 router.use(requireAuth);
 
+// GET /api/trades/symbols
+router.get('/symbols', async (req: Request, res: Response) => {
+  try {
+    const rows = await prisma.trade.findMany({
+      where: { userId: req.userId },
+      select: { symbol: true },
+      distinct: ['symbol'],
+      orderBy: { symbol: 'asc' },
+    });
+    res.json(rows.map((r) => r.symbol));
+  } catch (error) {
+    console.error('Error fetching symbols:', error);
+    res.status(500).json({ error: 'Failed to fetch symbols' });
+  }
+});
+
 const IMPORT_BATCH_SIZE = 500;
 
 type TradeWithNumericFields = {

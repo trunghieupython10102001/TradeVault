@@ -10,6 +10,7 @@ interface DateTimePickerProps {
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
+  timezone?: string;
 }
 
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -20,6 +21,21 @@ const MONTHS = [
 
 function pad(n: number): string {
   return n.toString().padStart(2, '0');
+}
+
+function getNowInTimezone(tz: string) {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      year: 'numeric', month: 'numeric', day: 'numeric',
+      hour: 'numeric', minute: 'numeric', hour12: false,
+    }).formatToParts(new Date());
+    const get = (type: string) => parseInt(parts.find((p) => p.type === type)?.value ?? '0');
+    return { year: get('year'), month: get('month') - 1, day: get('day'), hours: get('hour') % 24, minutes: get('minute') };
+  } catch {
+    const d = new Date();
+    return { year: d.getFullYear(), month: d.getMonth(), day: d.getDate(), hours: d.getHours(), minutes: d.getMinutes() };
+  }
 }
 
 function toLocalParts(dateStr: string) {
@@ -66,6 +82,7 @@ export default function DateTimePicker({
   placeholder = 'Select date & time',
   required,
   disabled,
+  timezone,
 }: DateTimePickerProps) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -81,13 +98,13 @@ export default function DateTimePicker({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
-  const today = new Date();
+  const now = timezone ? getNowInTimezone(timezone) : (() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth(), day: d.getDate(), hours: d.getHours(), minutes: d.getMinutes() }; })();
   const parsed = toLocalParts(value);
 
-  const [viewYear, setViewYear] = useState(parsed?.year ?? today.getFullYear());
-  const [viewMonth, setViewMonth] = useState(parsed?.month ?? today.getMonth());
-  const [hours, setHours] = useState(parsed ? pad(parsed.hours) : pad(today.getHours()));
-  const [minutes, setMinutes] = useState(parsed ? pad(parsed.minutes) : pad(today.getMinutes()));
+  const [viewYear, setViewYear] = useState(parsed?.year ?? now.year);
+  const [viewMonth, setViewMonth] = useState(parsed?.month ?? now.month);
+  const [hours, setHours] = useState(parsed ? pad(parsed.hours) : pad(now.hours));
+  const [minutes, setMinutes] = useState(parsed ? pad(parsed.minutes) : pad(now.minutes));
 
   const buildValue = useCallback((year: number, month: number, day: number, h: string, m: string) => {
     return `${year}-${pad(month + 1)}-${pad(day)}T${h}:${m}`;
@@ -127,14 +144,14 @@ export default function DateTimePicker({
   };
 
   const goToToday = () => {
-    const now = new Date();
-    setViewYear(now.getFullYear());
-    setViewMonth(now.getMonth());
-    const h = pad(now.getHours());
-    const m = pad(now.getMinutes());
+    const n = timezone ? getNowInTimezone(timezone) : (() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth(), day: d.getDate(), hours: d.getHours(), minutes: d.getMinutes() }; })();
+    setViewYear(n.year);
+    setViewMonth(n.month);
+    const h = pad(n.hours);
+    const m = pad(n.minutes);
     setHours(h);
     setMinutes(m);
-    onChange(buildValue(now.getFullYear(), now.getMonth(), now.getDate(), h, m));
+    onChange(buildValue(n.year, n.month, n.day, h, m));
   };
 
   const prevMonth = () => {
@@ -173,9 +190,9 @@ export default function DateTimePicker({
 
   const isToday = (day: number, outside: boolean) =>
     !outside &&
-    day === today.getDate() &&
-    viewMonth === today.getMonth() &&
-    viewYear === today.getFullYear();
+    day === now.day &&
+    viewMonth === now.month &&
+    viewYear === now.year;
 
   const isSelected = (day: number, outside: boolean) =>
     !outside &&
