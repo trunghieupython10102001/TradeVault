@@ -17,8 +17,20 @@ function createPrismaClient() {
   });
 }
 
-export const prisma =
-  globalForPrisma.prisma ||
-  createPrismaClient();
+let _client: PrismaClient | null = null;
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+function getClient(): PrismaClient {
+  if (!_client) {
+    _client = globalForPrisma.prisma ?? createPrismaClient();
+    if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = _client;
+  }
+  return _client;
+}
+
+// Proxy defers client creation (and DATABASE_URL check) until first actual use,
+// so Next.js can import route modules at build time without a DB connection.
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_, prop: string | symbol) {
+    return (getClient() as any)[prop];
+  },
+});
