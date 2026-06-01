@@ -32,7 +32,9 @@ const upload = multer({
 });
 
 // POST /api/uploads
-router.post('/', upload.single('file'), (req: Request, res: Response) => {
+// Cast needed: multer resolves @types/express-serve-static-core from root node_modules
+// while apps/api has its own copy — identical at runtime but incompatible TypeScript paths
+router.post('/', upload.single('file') as any, (req: Request, res: Response) => {
   if (!req.file) {
     res.status(400).json({ error: 'No file provided' });
     return;
