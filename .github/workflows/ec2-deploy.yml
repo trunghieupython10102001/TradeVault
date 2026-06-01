@@ -65,6 +65,10 @@ jobs:
       - name: Test
         run: npm run test
 
+      - name: Build API package
+        run: npm run build --workspace=@repo/api
+        continue-on-error: true
+
       - name: Build
         run: npm run build --workspace=trading-journal
         continue-on-error: true
