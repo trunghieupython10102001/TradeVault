@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { NextResponse } from 'next/server';
-import { Prisma } from '@prisma/client';
+import { sqltag as sql, join } from '@prisma/client/runtime/client';
 import { prisma } from '@repo/database';
 import { parseCsv } from '@/server/lib/csvParser';
 import { calculateRMultiple } from '@/server/lib/calculations';
@@ -160,7 +160,7 @@ export async function POST(request: Request) {
     for (const batch of chunk(uniqueTicketTrades, IMPORT_BATCH_SIZE)) {
       const values = batch.map((trade: ParsedTrade) => {
         const d = trade.data;
-        return Prisma.sql`(
+        return sql`(
           ${randomUUID()}, ${auth.userId}, ${d.accountId}, ${trade.brokerTicketId}, ${d.symbol}, ${d.side}::"TradeSide", ${d.status}::"TradeStatus",
           ${d.entryPrice}, ${d.exitPrice}, ${d.quantity}, ${d.stopLoss}, ${d.takeProfit}, ${d.commission}, ${d.pnl}, ${d.pnlPercent}, ${d.rMultiple},
           ${d.entryDate}, ${d.exitDate}, NOW(), NOW()
@@ -172,7 +172,7 @@ export async function POST(request: Request) {
           "id", "user_id", "account_id", "broker_ticket_id", "symbol", "side", "status",
           "entry_price", "exit_price", "quantity", "stop_loss", "take_profit", "commission", "pnl", "pnl_percent", "r_multiple",
           "entry_date", "exit_date", "created_at", "updated_at"
-        ) VALUES ${Prisma.join(values)}
+        ) VALUES ${join(values)}
         ON CONFLICT ("user_id", "broker_ticket_id") DO UPDATE SET
           "account_id" = EXCLUDED."account_id",
           "symbol" = EXCLUDED."symbol",

@@ -53,7 +53,7 @@ describe('tradeSchema', () => {
   });
 
   it('rejects missing symbol', () => {
-    const noSymbol = { ...validTrade };
+    const noSymbol: Partial<typeof validTrade> = { ...validTrade };
     delete noSymbol.symbol;
     expect(() => tradeSchema.parse(noSymbol)).toThrow();
   });
