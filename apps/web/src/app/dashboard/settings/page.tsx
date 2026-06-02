@@ -49,10 +49,15 @@ interface Account {
 
 const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'HKD', 'SGD', 'THB'];
 const timezones = [
-  'UTC', 'America/New_York', 'America/Chicago', 'America/Los_Angeles',
-  'Europe/London', 'Europe/Berlin', 'Europe/Paris',
-  'Asia/Tokyo', 'Asia/Shanghai', 'Asia/Hong_Kong', 'Asia/Singapore', 'Asia/Bangkok',
-  'Australia/Sydney',
+  'UTC',
+  'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
+  'America/Sao_Paulo', 'America/Toronto',
+  'Europe/London', 'Europe/Berlin', 'Europe/Paris', 'Europe/Moscow',
+  'Africa/Cairo',
+  'Asia/Dubai', 'Asia/Karachi', 'Asia/Kolkata',
+  'Asia/Dhaka', 'Asia/Bangkok', 'Asia/Ho_Chi_Minh',
+  'Asia/Singapore', 'Asia/Hong_Kong', 'Asia/Shanghai', 'Asia/Tokyo',
+  'Australia/Sydney', 'Pacific/Auckland',
 ];
 const dateFormats = ['yyyy-MM-dd', 'MM/dd/yyyy', 'dd/MM/yyyy', 'dd.MM.yyyy'];
 const defaultAssetClasses = ['Stocks', 'Options', 'Futures', 'Forex', 'Crypto', 'CFDs', 'Bonds', 'ETFs'];

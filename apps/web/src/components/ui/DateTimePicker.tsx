@@ -87,6 +87,18 @@ export default function DateTimePicker({
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
+  // When timezone loads async from settings, re-sync the default time display
+  // (only when no date is already selected so we don't clobber the user's pick)
+  useEffect(() => {
+    if (!timezone || value) return;
+    const n = getNowInTimezone(timezone);
+    setViewYear(n.year);
+    setViewMonth(n.month);
+    setHours(pad(n.hours));
+    setMinutes(pad(n.minutes));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timezone]);
+
   useEffect(() => {
     if (!open) return;
     const handleClickOutside = (e: MouseEvent) => {
