@@ -185,11 +185,15 @@ router.delete('/bulk', async (req: Request, res: Response) => {
 // POST /api/trades/import  — must be before /:id
 router.post('/import', async (req: Request, res: Response) => {
   try {
-    const { csv, startingBalance, broker } = req.body as {
+    const { csv, startingBalance, broker, csvTimezoneOffset } = req.body as {
       csv: string;
       startingBalance?: number;
       broker?: string;
+      csvTimezoneOffset?: number;
     };
+    const shiftMs = typeof csvTimezoneOffset === 'number' ? csvTimezoneOffset * 3_600_000 : 0;
+    const shiftDate = (d: Date | null): Date | null =>
+      d && shiftMs ? new Date(d.getTime() - shiftMs) : d;
 
     if (!csv || typeof csv !== 'string') {
       res.status(400).json({ error: 'CSV content is required' });
@@ -276,8 +280,8 @@ router.post('/import', async (req: Request, res: Response) => {
             pnl: t.pnl,
             pnlPercent: null,
             rMultiple,
-            entryDate: t.entryDate,
-            exitDate: t.exitDate,
+            entryDate: shiftDate(t.entryDate) ?? t.entryDate,
+            exitDate: shiftDate(t.exitDate),
           },
         });
       } catch (err: unknown) {

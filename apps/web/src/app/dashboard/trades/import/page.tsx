@@ -53,6 +53,7 @@ export default function ImportTradesPage() {
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState('');
   const [broker, setBroker] = useState<BrokerOption>('auto');
+  const [csvOffset, setCsvOffset] = useState(0);
 
   const handleFile = useCallback((file: File) => {
     if (!file.name.endsWith('.csv')) {
@@ -102,6 +103,7 @@ export default function ImportTradesPage() {
           csv: csvContent,
           startingBalance: startingBalance ? parseFloat(startingBalance) : undefined,
           broker: broker === 'auto' ? undefined : broker,
+          csvTimezoneOffset: csvOffset,
         }),
       });
 
@@ -173,6 +175,27 @@ export default function ImportTradesPage() {
               </div>
             </>
           )}
+        </div>
+
+        <div className={styles.formatCard}>
+          <div className={styles.formatHeader}>
+            <h3 className={styles.formatTitle}>CSV timezone</h3>
+            <select
+              className={styles.brokerSelect}
+              value={csvOffset}
+              onChange={(e) => setCsvOffset(parseInt(e.target.value))}
+            >
+              {Array.from({ length: 27 }, (_, i) => i - 12).map((offset) => (
+                <option key={offset} value={offset}>
+                  {offset === 0 ? 'UTC+0 (default)' : offset > 0 ? `UTC+${offset}` : `UTC${offset}`}
+                </option>
+              ))}
+            </select>
+          </div>
+          <p className={styles.formatDesc}>
+            Select the timezone your broker&apos;s CSV timestamps are in. Your app will convert them automatically.
+            Vietnam is UTC+7 — if your broker server is UTC+4, select UTC+4.
+          </p>
         </div>
 
         <div className={styles.balanceSection}>

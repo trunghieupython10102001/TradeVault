@@ -40,11 +40,15 @@ export async function POST(request: Request) {
   if (auth.response) return auth.response;
 
   try {
-    const { csv, startingBalance, broker } = await request.json() as {
+    const { csv, startingBalance, broker, csvTimezoneOffset } = await request.json() as {
       csv: string;
       startingBalance?: number;
       broker?: string;
+      csvTimezoneOffset?: number;
     };
+    const shiftMs = typeof csvTimezoneOffset === 'number' ? csvTimezoneOffset * 3_600_000 : 0;
+    const shiftDate = (d: Date | null): Date | null =>
+      d && shiftMs ? new Date(d.getTime() - shiftMs) : d;
 
     if (!csv || typeof csv !== 'string') {
       return NextResponse.json({ error: 'CSV content is required' }, { status: 400 });
@@ -127,8 +131,8 @@ export async function POST(request: Request) {
             pnl: t.pnl,
             pnlPercent: null,
             rMultiple,
-            entryDate: t.entryDate,
-            exitDate: t.exitDate,
+            entryDate: shiftDate(t.entryDate) ?? t.entryDate,
+            exitDate: shiftDate(t.exitDate),
           },
         });
       } catch (err: unknown) {
