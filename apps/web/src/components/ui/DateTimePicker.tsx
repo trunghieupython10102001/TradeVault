@@ -23,46 +23,52 @@ function pad(n: number): string {
   return n.toString().padStart(2, '0');
 }
 
-function getNowInTimezone(tz: string) {
-  try {
-    const parts = new Intl.DateTimeFormat('en-US', {
-      timeZone: tz,
-      year: 'numeric', month: 'numeric', day: 'numeric',
-      hour: 'numeric', minute: 'numeric', hour12: false,
-    }).formatToParts(new Date());
-    const get = (type: string) => parseInt(parts.find((p) => p.type === type)?.value ?? '0');
-    return { year: get('year'), month: get('month') - 1, day: get('day'), hours: get('hour') % 24, minutes: get('minute') };
-  } catch {
-    const d = new Date();
-    return { year: d.getFullYear(), month: d.getMonth(), day: d.getDate(), hours: d.getHours(), minutes: d.getMinutes() };
-  }
-}
-
-function toLocalParts(dateStr: string) {
-  if (!dateStr) return null;
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) {
-    const parts = dateStr.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
-    if (!parts) return null;
-    return {
-      year: parseInt(parts[1]),
-      month: parseInt(parts[2]) - 1,
-      day: parseInt(parts[3]),
-      hours: parseInt(parts[4]),
-      minutes: parseInt(parts[5]),
-    };
+function getZonedParts(date: Date, tz?: string) {
+  if (tz) {
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        year: 'numeric', month: 'numeric', day: 'numeric',
+        hour: 'numeric', minute: 'numeric', hour12: false,
+      }).formatToParts(date);
+      const get = (t: string) => parseInt(parts.find((p) => p.type === t)?.value ?? '0');
+      return { year: get('year'), month: get('month') - 1, day: get('day'), hours: get('hour') % 24, minutes: get('minute') };
+    } catch {
+      // fall through to local
+    }
   }
   return {
-    year: d.getFullYear(),
-    month: d.getMonth(),
-    day: d.getDate(),
-    hours: d.getHours(),
-    minutes: d.getMinutes(),
+    year: date.getFullYear(),
+    month: date.getMonth(),
+    day: date.getDate(),
+    hours: date.getHours(),
+    minutes: date.getMinutes(),
   };
 }
 
-function formatDisplay(dateStr: string): string {
-  const p = toLocalParts(dateStr);
+// Converts a wall-clock time in `tz` to the equivalent UTC Date.
+function toUTC(year: number, month: number, day: number, hours: number, minutes: number, tz?: string): Date {
+  if (!tz) return new Date(year, month, day, hours, minutes);
+  // Build a UTC timestamp as if the local values were UTC, then find how the
+  // timezone offsets that moment, and compensate.
+  const naive = new Date(Date.UTC(year, month, day, hours, minutes));
+  const inTz = getZonedParts(naive, tz);
+  const inTzMs = Date.UTC(inTz.year, inTz.month, inTz.day, inTz.hours, inTz.minutes);
+  const offsetMs = inTzMs - naive.getTime();
+  return new Date(naive.getTime() - offsetMs);
+}
+
+function parseValue(dateStr: string, tz?: string) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (!isNaN(d.getTime())) return getZonedParts(d, tz);
+  const m = dateStr.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (!m) return null;
+  return { year: +m[1], month: +m[2] - 1, day: +m[3], hours: +m[4], minutes: +m[5] };
+}
+
+function formatDisplay(dateStr: string, tz?: string): string {
+  const p = parseValue(dateStr, tz);
   if (!p) return '';
   const monthName = MONTHS[p.month].slice(0, 3);
   return `${monthName} ${p.day}, ${p.year} ${pad(p.hours)}:${pad(p.minutes)}`;
@@ -76,6 +82,12 @@ function getFirstDayOfWeek(year: number, month: number): number {
   return new Date(year, month, 1).getDay();
 }
 
+function tzLabel(tz?: string): string {
+  if (!tz) return 'Time';
+  const city = tz.split('/').pop()?.replace(/_/g, ' ') ?? tz;
+  return city;
+}
+
 export default function DateTimePicker({
   value,
   onChange,
@@ -87,11 +99,19 @@ export default function DateTimePicker({
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
+  const now = getZonedParts(new Date(), timezone);
+  const parsed = parseValue(value, timezone);
+
+  const [viewYear, setViewYear] = useState(parsed?.year ?? now.year);
+  const [viewMonth, setViewMonth] = useState(parsed?.month ?? now.month);
+  const [hours, setHours] = useState(parsed ? pad(parsed.hours) : pad(now.hours));
+  const [minutes, setMinutes] = useState(parsed ? pad(parsed.minutes) : pad(now.minutes));
+
   // When timezone loads async from settings, re-sync the default time display
   // (only when no date is already selected so we don't clobber the user's pick)
   useEffect(() => {
     if (!timezone || value) return;
-    const n = getNowInTimezone(timezone);
+    const n = getZonedParts(new Date(), timezone);
     setViewYear(n.year);
     setViewMonth(n.month);
     setHours(pad(n.hours));
@@ -110,17 +130,9 @@ export default function DateTimePicker({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
-  const now = timezone ? getNowInTimezone(timezone) : (() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth(), day: d.getDate(), hours: d.getHours(), minutes: d.getMinutes() }; })();
-  const parsed = toLocalParts(value);
-
-  const [viewYear, setViewYear] = useState(parsed?.year ?? now.year);
-  const [viewMonth, setViewMonth] = useState(parsed?.month ?? now.month);
-  const [hours, setHours] = useState(parsed ? pad(parsed.hours) : pad(now.hours));
-  const [minutes, setMinutes] = useState(parsed ? pad(parsed.minutes) : pad(now.minutes));
-
   const buildValue = useCallback((year: number, month: number, day: number, h: string, m: string) => {
-    return `${year}-${pad(month + 1)}-${pad(day)}T${h}:${m}`;
-  }, []);
+    return toUTC(year, month, day, parseInt(h) || 0, parseInt(m) || 0, timezone).toISOString();
+  }, [timezone]);
 
   const handleDayClick = (day: number, isOutside: boolean) => {
     if (isOutside) return;
@@ -156,7 +168,7 @@ export default function DateTimePicker({
   };
 
   const goToToday = () => {
-    const n = timezone ? getNowInTimezone(timezone) : (() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth(), day: d.getDate(), hours: d.getHours(), minutes: d.getMinutes() }; })();
+    const n = getZonedParts(new Date(), timezone);
     setViewYear(n.year);
     setViewMonth(n.month);
     const h = pad(n.hours);
@@ -223,7 +235,7 @@ export default function DateTimePicker({
       >
         <Calendar size={15} className={styles.triggerIcon} />
         <span className={`${styles.triggerText} ${!value ? styles.placeholder : ''}`}>
-          {value ? formatDisplay(value) : placeholder}
+          {value ? formatDisplay(value, timezone) : placeholder}
         </span>
         {value && !required && !disabled && (
           <span
@@ -283,7 +295,7 @@ export default function DateTimePicker({
             {/* Time */}
             <div className={styles.timeSection}>
               <Clock size={14} className={styles.triggerIcon} />
-              <span className={styles.timeLabel}>Time</span>
+              <span className={styles.timeLabel}>{tzLabel(timezone)}</span>
               <input
                 type="text"
                 className={styles.timeInput}
