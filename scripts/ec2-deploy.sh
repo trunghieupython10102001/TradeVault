@@ -17,32 +17,31 @@ if [[ "${SKIP_GIT_PULL}" != "true" ]]; then
   git pull --ff-only origin "${BRANCH}"
 fi
 
-rm -rf node_modules apps/web/node_modules packages/database/node_modules
-npm ci --include=dev || npm install --include=dev
+# Install production deps only — build artifacts are shipped by CI
+npm ci --omit=dev
 
 set -a
 source apps/web/.env
 set +a
+
+# Generate Prisma client for the runtime environment
 npx prisma generate --schema="${PRISMA_SCHEMA}"
-npm run build --workspace=@repo/database
+
+# Apply any pending migrations
 (
   cd packages/database
   npx prisma migrate deploy
 )
-npm run build --workspace=trading-journal
 
-# Build Express API
-npm run build --workspace=@repo/api
-
-# Start/reload Next.js app
+# Reload Next.js app
+API_NAME="${APP_NAME}-api"
 if pm2 describe "${APP_NAME}" >/dev/null 2>&1; then
   pm2 reload "${APP_NAME}" --update-env
 else
   (cd apps/web && pm2 start npm --name "${APP_NAME}" -- start)
 fi
 
-# Start/reload Express API
-API_NAME="${APP_NAME}-api"
+# Reload Express API
 if pm2 describe "${API_NAME}" >/dev/null 2>&1; then
   pm2 reload "${API_NAME}" --update-env
 else
