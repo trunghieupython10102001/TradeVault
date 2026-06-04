@@ -1,58 +1,45 @@
 import { Router, Request, Response } from 'express';
-import multer from 'multer';
-import path from 'path';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
 import { requireAuth } from '../middleware/auth';
 
 const router = Router();
 router.use(requireAuth);
 
-const MAX_SIZE = 10 * 1024 * 1024; // 10MB
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, path.join(process.cwd(), 'uploads'));
-  },
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname) || '.png';
-    cb(null, `${randomUUID()}${ext}`);
+const s3 = new S3Client({
+  region: process.env.AWS_REGION!,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
   },
 });
 
-const upload = multer({
-  storage,
-  limits: { fileSize: MAX_SIZE },
-  fileFilter: (_req, file, cb) => {
-    if (!file.mimetype.startsWith('image/')) {
-      cb(new Error('Only image files are allowed'));
-      return;
-    }
-    cb(null, true);
-  },
-});
+// GET /api/uploads/presigned?filename=photo.jpg&contentType=image/jpeg
+router.get('/presigned', async (req: Request, res: Response) => {
+  const { filename, contentType } = req.query as { filename: string; contentType: string };
+  if (!filename || !contentType) {
+    res.status(400).json({ error: 'filename and contentType are required' });
+    return;
+  }
+  if (!contentType.startsWith('image/')) {
+    res.status(400).json({ error: 'Only image files are allowed' });
+    return;
+  }
 
-// POST /api/uploads
-// Cast needed: multer resolves @types/express-serve-static-core from root node_modules
-// while apps/api has its own copy — identical at runtime but incompatible TypeScript paths
-router.post('/', upload.single('file') as any, (req: Request, res: Response) => {
-  if (!req.file) {
-    res.status(400).json({ error: 'No file provided' });
-    return;
-  }
-  res.json({ url: `/uploads/${req.file.filename}` });
-});
+  const ext = filename.split('.').pop() ?? 'png';
+  const key = `journal-images/${req.userId}/${randomUUID()}.${ext}`;
 
-// Error handler for multer errors
-router.use((err: Error, _req: Request, res: Response, next: Function) => {
-  if (err.message === 'Only image files are allowed') {
-    res.status(400).json({ error: err.message });
-    return;
-  }
-  if (err.message?.includes('File too large')) {
-    res.status(400).json({ error: 'File too large (max 10MB)' });
-    return;
-  }
-  next(err);
+  const command = new PutObjectCommand({
+    Bucket: process.env.AWS_S3_BUCKET!,
+    Key: key,
+    ContentType: contentType,
+  });
+
+  const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
+  const publicUrl = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+
+  res.json({ uploadUrl, publicUrl });
 });
 
 export default router;
