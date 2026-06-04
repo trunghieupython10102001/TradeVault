@@ -46,6 +46,11 @@
   color: var(--accent);
 }
 
+.uploading {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .divider {
   width: 1px;
   height: 18px;

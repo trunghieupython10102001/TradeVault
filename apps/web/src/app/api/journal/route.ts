@@ -43,8 +43,9 @@ export async function POST(request: Request) {
     const data = result.data;
     const entry = await prisma.journalEntry.upsert({
       where: {
-        userId_entryDate: {
+        userId_periodType_entryDate: {
           userId: auth.userId,
+          periodType: data.periodType,
           entryDate: data.entryDate,
         },
       },
@@ -56,6 +57,7 @@ export async function POST(request: Request) {
       create: {
         userId: auth.userId,
         entryDate: data.entryDate,
+        periodType: data.periodType,
         content: data.content,
         mood: data.mood,
         confidenceLevel: data.confidenceLevel,

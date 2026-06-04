@@ -4,8 +4,9 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Image as TiptapImage } from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { apiFetch } from '@/lib/api';
+import { useToast } from '@/lib/toast-context';
 import styles from './RichTextEditor.module.css';
 
 interface Props {
@@ -15,14 +16,25 @@ interface Props {
 
 export default function RichTextEditor({ content, onChange }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const toast = useToast();
 
   const uploadImage = async (file: File) => {
-    const res = await apiFetch(
-      `/api/uploads/presigned?filename=${encodeURIComponent(file.name)}&contentType=${encodeURIComponent(file.type)}`
-    );
-    const { uploadUrl, publicUrl } = await res.json();
-    await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
-    editor?.chain().focus().setImage({ src: publicUrl }).run();
+    setUploading(true);
+    try {
+      const res = await apiFetch(
+        `/api/uploads/presigned?filename=${encodeURIComponent(file.name)}&contentType=${encodeURIComponent(file.type)}`
+      );
+      if (!res.ok) throw new Error('Failed to get upload URL');
+      const { uploadUrl, publicUrl } = await res.json();
+      const s3Res = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+      if (!s3Res.ok) throw new Error('Failed to upload image');
+      editor?.chain().focus().setImage({ src: publicUrl }).run();
+    } catch {
+      toast.error('Failed to upload image. Please try again.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const editor = useEditor({
@@ -82,10 +94,12 @@ export default function RichTextEditor({ content, onChange }: Props) {
         <div className={styles.divider} />
         <button
           type="button"
-          onMouseDown={(e) => { e.preventDefault(); fileInputRef.current?.click(); }}
-          className={styles.toolbarBtn}
+          onMouseDown={(e) => { e.preventDefault(); if (!uploading) fileInputRef.current?.click(); }}
+          className={`${styles.toolbarBtn} ${uploading ? styles.uploading : ''}`}
+          disabled={uploading}
+          title={uploading ? 'Uploading…' : 'Insert image'}
         >
-          IMG
+          {uploading ? '…' : 'IMG'}
         </button>
         <input
           ref={fileInputRef}
