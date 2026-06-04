@@ -5,6 +5,7 @@ import {
   periodLabel,
   navigatePeriod,
   toISODate,
+  parseContent,
 } from './journalPeriod';
 
 describe('periodStart', () => {
@@ -73,5 +74,38 @@ describe('navigatePeriod', () => {
     const start = new Date('2025-01-01');
     expect(toISODate(navigatePeriod(start, 'MONTH', 1))).toBe('2025-02-01');
     expect(toISODate(navigatePeriod(start, 'MONTH', -1))).toBe('2024-12-01');
+  });
+
+  it('MONTH handles month-boundary navigation from end-of-month correctly', () => {
+    const start = new Date('2025-01-31');
+    // Jan 31 + 1 month = Feb 31 (invalid) → Mar 1, periodStart returns Mar 1
+    expect(toISODate(navigatePeriod(start, 'MONTH', 1))).toBe('2025-03-01');
+  });
+});
+
+describe('parseContent', () => {
+  it('Valid Tiptap JSON parses correctly', () => {
+    const tiptapJson = '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Hello"}]}]}';
+    const result = parseContent(tiptapJson);
+    expect(result).toEqual({
+      type: 'doc',
+      content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Hello' }] }],
+    });
+  });
+
+  it('Empty string returns empty doc', () => {
+    const result = parseContent('');
+    expect(result).toEqual({
+      type: 'doc',
+      content: [],
+    });
+  });
+
+  it('Plain text string wraps in paragraph node', () => {
+    const result = parseContent('Plain text content');
+    expect(result).toEqual({
+      type: 'doc',
+      content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Plain text content' }] }],
+    });
   });
 });

@@ -45,6 +45,7 @@ export function navigatePeriod(start: Date, type: PeriodType, direction: -1 | 1)
   return periodStart(d, type);
 }
 
+// Use local date parts instead of toISOString() to preserve timezone-aware dates without UTC conversion
 export function toISODate(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -52,7 +53,7 @@ export function toISODate(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-export function parseContent(raw: string): object {
+export function parseContent(raw: string): unknown {
   try { return JSON.parse(raw); }
   catch {
     return {
