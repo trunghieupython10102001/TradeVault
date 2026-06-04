@@ -173,5 +173,6 @@ model JournalTrade {
   trade     Trade        @relation(fields: [tradeId], references: [id], onDelete: Cascade)
 
   @@id([journalId, tradeId])
+  @@index([tradeId])
   @@map("journal_trades")
 }
