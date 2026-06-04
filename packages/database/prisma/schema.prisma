@@ -105,6 +105,7 @@ model Trade {
   account         Account?    @relation(fields: [accountId], references: [id], onDelete: SetNull)
   tags            TradeTag[]
   images          TradeImage[]
+  journalTrades   JournalTrade[]
 
   @@unique([userId, brokerTicketId], name: "unique_user_broker_ticket")
   @@index([userId, entryDate])
@@ -149,16 +150,28 @@ model TradeImage {
 }
 
 model JournalEntry {
-  id              String   @id @default(uuid())
-  userId          String   @map("user_id")
-  entryDate       DateTime @map("entry_date") @db.Date
-  content         String   @db.Text
+  id              String         @id @default(uuid())
+  userId          String         @map("user_id")
+  entryDate       DateTime       @map("entry_date") @db.Date
+  periodType      String         @default("DAY") @map("period_type")
+  content         String         @db.Text
   mood            String?
-  confidenceLevel Int?     @map("confidence_level")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  confidenceLevel Int?           @map("confidence_level")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trades          JournalTrade[]
 
-  @@unique([userId, entryDate])
+  @@unique([userId, periodType, entryDate])
   @@map("journal_entries")
+}
+
+model JournalTrade {
+  journalId String       @map("journal_id")
+  tradeId   String       @map("trade_id")
+  journal   JournalEntry @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  trade     Trade        @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  @@id([journalId, tradeId])
+  @@map("journal_trades")
 }
