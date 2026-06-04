@@ -25,9 +25,11 @@ export const tradeSchema = z.object({
 
 export const journalSchema = z.object({
   entryDate: z.coerce.date(),
+  periodType: z.enum(['DAY', 'WEEK', 'MONTH']).default('DAY'),
   content: z.string().min(1, 'Content is required'),
   mood: z.enum(['GREAT', 'GOOD', 'NEUTRAL', 'BAD', 'TERRIBLE']).optional().nullable(),
   confidenceLevel: z.coerce.number().int().min(1).max(10).optional().nullable(),
+  tradeIds: z.array(z.string().uuid()).optional().default([]),
 });
 
 export type TradeInput = z.infer<typeof tradeSchema>;
