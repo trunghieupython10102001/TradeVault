@@ -15,6 +15,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@prisma/adapter-pg": "^7.4.0",
     "@prisma/client": "^7.4.0",
+    "@react-pdf/renderer": "^4.5.1",
     "@tiptap/extension-image": "^3.25.0",
     "@tiptap/extension-link": "^3.25.0",
     "@tiptap/react": "^3.25.0",
