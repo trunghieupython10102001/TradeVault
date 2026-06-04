@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
+import path from 'path';
 import { requireAuth } from '../middleware/auth';
 
 const router = Router();
@@ -26,8 +27,14 @@ router.get('/presigned', async (req: Request, res: Response) => {
     res.status(400).json({ error: 'Only image files are allowed' });
     return;
   }
+  if (filename.length > 255) {
+    res.status(400).json({ error: 'Filename too long' });
+    return;
+  }
 
-  const ext = filename.split('.').pop() ?? 'png';
+  // Strip to basename and sanitize — key is UUID-based so filename is only used for extension
+  const safeFilename = path.basename(filename).replace(/[^a-zA-Z0-9._-]/g, '_');
+  const ext = safeFilename.split('.').pop() ?? 'png';
   const key = `journal-images/${req.userId}/${randomUUID()}.${ext}`;
 
   const command = new PutObjectCommand({
