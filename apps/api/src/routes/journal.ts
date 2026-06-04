@@ -52,6 +52,14 @@ router.post('/', async (req: Request, res: Response) => {
 
     await prisma.journalTrade.deleteMany({ where: { journalId: entry.id } });
     if (tradeIds.length > 0) {
+      const ownedTrades = await prisma.trade.findMany({
+        where: { id: { in: tradeIds }, userId: req.userId },
+        select: { id: true },
+      });
+      if (ownedTrades.length !== tradeIds.length) {
+        res.status(403).json({ error: 'One or more trade IDs do not belong to you' });
+        return;
+      }
       await prisma.journalTrade.createMany({
         data: tradeIds.map((tradeId) => ({ journalId: entry.id, tradeId })),
       });
@@ -69,7 +77,11 @@ router.post('/', async (req: Request, res: Response) => {
         },
       },
     });
-    res.json({ ...updated, linkedTrades: updated!.trades.map((t) => t.trade), trades: undefined });
+    if (!updated) {
+      res.status(500).json({ error: 'Failed to fetch saved entry' });
+      return;
+    }
+    res.json({ ...updated, linkedTrades: updated.trades.map((t) => t.trade), trades: undefined });
   } catch (error) {
     console.error('Error saving journal entry:', error);
     res.status(500).json({ error: 'Failed to save journal entry' });
