@@ -11,7 +11,7 @@ interface JournalEntry {
   content: string;
   mood: 'GREAT' | 'GOOD' | 'NEUTRAL' | 'BAD' | 'TERRIBLE';
   confidenceLevel: number;
-  linkedTrades: { id: string; symbol: string; side: string; pnl: number }[];
+  linkedTrades: { id: string; symbol: string; side: string; pnl: string | null; entryDate: string; exitDate?: string | null }[];
 }
 
 interface Props {
