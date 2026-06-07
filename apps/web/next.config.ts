@@ -11,8 +11,8 @@ const nextConfig: NextConfig = {
     return {
       beforeFiles: [
         {
-          // Proxy all /api/* routes to EC2, except /api/uploads (served by Next.js via Vercel Blob)
-          source: "/api/:path((?!uploads).*)",
+          // Proxy all /api/* routes to EC2, except exact /api/uploads (served by Next.js via Vercel Blob)
+          source: "/api/:path((?!uploads$).*)",
           destination: `${apiOrigin}/api/:path*`,
         },
       ],
