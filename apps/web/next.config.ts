@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const apiOrigin = process.env.API_ORIGIN;
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ['@aws-sdk/client-s3', '@aws-sdk/s3-request-presigner'],
   async rewrites() {
     if (!apiOrigin) {
       return [];
