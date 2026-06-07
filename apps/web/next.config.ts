@@ -10,9 +10,15 @@ const nextConfig: NextConfig = {
 
     return {
       beforeFiles: [
+        // Proxy /api/uploads/presigned (and any future sub-routes) to EC2
+        // Uses :subpath+ so it only matches paths WITH a sub-segment, not /api/uploads itself
         {
-          // Proxy all /api/* routes to EC2, except exact /api/uploads (served by Next.js via Vercel Blob)
-          source: "/api/:path((?!uploads$).*)",
+          source: "/api/uploads/:subpath+",
+          destination: `${apiOrigin}/api/uploads/:subpath*`,
+        },
+        // Proxy all other /api/* routes to EC2, except /api/uploads (Vercel Blob handler)
+        {
+          source: "/api/:path((?!uploads).*)",
           destination: `${apiOrigin}/api/:path*`,
         },
       ],
