@@ -43,8 +43,13 @@ export async function GET(request: NextRequest) {
     ContentType: contentType,
   });
 
-  const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
-  const publicUrl = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
-
-  return NextResponse.json({ uploadUrl, publicUrl });
+  try {
+    const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
+    const publicUrl = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+    return NextResponse.json({ uploadUrl, publicUrl });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[presigned] S3 error:', message);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
