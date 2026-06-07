@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import { Plus, Clock, Edit3, ChevronLeft, ChevronRight, FileDown } from 'lucide-react';
+import { Plus, Clock, Edit3, ChevronLeft, ChevronRight } from 'lucide-react';
 import Topbar from '@/components/layout/Topbar';
 import RichTextEditor from '@/components/journal/RichTextEditor';
 import TradePicker from '@/components/journal/TradePicker';
@@ -22,13 +22,8 @@ import { Image as TiptapImage } from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import styles from './page.module.css';
 
-// @react-pdf/renderer must be client-only
-const PDFDownloadLink = dynamic(
-  () => import('@react-pdf/renderer').then((m) => m.PDFDownloadLink),
-  { ssr: false }
-);
-const JournalPDFDocument = dynamic(
-  () => import('@/components/journal/JournalPDFDocument'),
+const PDFExportButton = dynamic(
+  () => import('@/components/journal/PDFExportButton'),
   { ssr: false }
 );
 
@@ -291,15 +286,11 @@ export default function JournalPage() {
                       <button className={styles.editEntryBtn} onClick={() => openEdit(entry)}>
                         <Edit3 size={13} />Edit
                       </button>
-                      <PDFDownloadLink
-                        document={<JournalPDFDocument entry={entry} />}
+                      <PDFExportButton
+                        entry={entry}
                         fileName={`journal-${entry.periodType.toLowerCase()}-${toISODate(new Date(entry.entryDate))}.pdf`}
                         className={styles.editEntryBtn}
-                      >
-                        {({ loading: pdfLoading }: { loading: boolean }) => (
-                          <><FileDown size={13} />{pdfLoading ? 'PDF...' : 'Export PDF'}</>
-                        )}
-                      </PDFDownloadLink>
+                      />
                     </div>
                   </div>
                   <div className={styles.entryContent} dangerouslySetInnerHTML={{ __html: html }} />

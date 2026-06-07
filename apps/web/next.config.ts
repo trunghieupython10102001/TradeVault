@@ -3,7 +3,6 @@ import type { NextConfig } from "next";
 const apiOrigin = process.env.API_ORIGIN;
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['@react-pdf/renderer'],
   async rewrites() {
     if (!apiOrigin) {
       return [];
