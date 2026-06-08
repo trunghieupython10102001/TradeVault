@@ -1,9 +1,76 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { createHmac, createHash } from 'crypto';
 import { randomUUID } from 'crypto';
 import path from 'path';
 import { getUserIdFromRequest } from '@/server/auth/legacy-jwt';
+
+function hmac(key: Buffer | string, data: string): Buffer {
+  return createHmac('sha256', key).update(data, 'utf8').digest();
+}
+
+function sha256hex(data: string): string {
+  return createHash('sha256').update(data, 'utf8').digest('hex');
+}
+
+function presignedPutUrl({
+  region,
+  bucket,
+  key,
+  accessKeyId,
+  secretAccessKey,
+  expiresIn,
+}: {
+  region: string;
+  bucket: string;
+  key: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+  expiresIn: number;
+}): string {
+  const now = new Date();
+  const date = now.toISOString().slice(0, 10).replace(/-/g, '');
+  const datetime = now.toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';
+
+  const host = `${bucket}.s3.${region}.amazonaws.com`;
+  const credentialScope = `${date}/${region}/s3/aws4_request`;
+  const encodedKey = '/' + key.split('/').map(encodeURIComponent).join('/');
+
+  const params: [string, string][] = [
+    ['X-Amz-Algorithm', 'AWS4-HMAC-SHA256'],
+    ['X-Amz-Credential', `${accessKeyId}/${credentialScope}`],
+    ['X-Amz-Date', datetime],
+    ['X-Amz-Expires', String(expiresIn)],
+    ['X-Amz-SignedHeaders', 'host'],
+  ].sort(([a], [b]) => a.localeCompare(b)) as [string, string][];
+
+  const queryString = params
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .join('&');
+
+  const canonicalRequest = [
+    'PUT',
+    encodedKey,
+    queryString,
+    `host:${host}\n`,
+    'host',
+    'UNSIGNED-PAYLOAD',
+  ].join('\n');
+
+  const stringToSign = [
+    'AWS4-HMAC-SHA256',
+    datetime,
+    credentialScope,
+    sha256hex(canonicalRequest),
+  ].join('\n');
+
+  const signingKey = hmac(
+    hmac(hmac(hmac(`AWS4${secretAccessKey}`, date), region), 's3'),
+    'aws4_request'
+  );
+  const signature = createHmac('sha256', signingKey).update(stringToSign, 'utf8').digest('hex');
+
+  return `https://${host}${encodedKey}?${queryString}&X-Amz-Signature=${signature}`;
+}
 
 export async function GET(request: NextRequest) {
   const auth = getUserIdFromRequest(request);
@@ -40,24 +107,8 @@ export async function GET(request: NextRequest) {
   const ext = safeFilename.split('.').pop() ?? 'png';
   const key = `journal-images/${auth.userId}/${randomUUID()}.${ext}`;
 
-  const s3 = new S3Client({
-    region,
-    credentials: { accessKeyId, secretAccessKey },
-  });
+  const uploadUrl = presignedPutUrl({ region, bucket, key, accessKeyId, secretAccessKey, expiresIn: 300 });
+  const publicUrl = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
 
-  const command = new PutObjectCommand({
-    Bucket: bucket,
-    Key: key,
-    ContentType: contentType,
-  });
-
-  try {
-    const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
-    const publicUrl = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
-    return NextResponse.json({ uploadUrl, publicUrl });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error('[presigned] S3 error:', message);
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+  return NextResponse.json({ uploadUrl, publicUrl });
 }
