@@ -3,6 +3,20 @@ import { prisma } from '@repo/database';
 import { getUserIdFromRequest } from '@/server/auth/legacy-jwt';
 import { journalSchema } from '@/server/lib/validators';
 
+const tradeSelect = {
+  id: true,
+  symbol: true,
+  side: true,
+  pnl: true,
+  entryDate: true,
+  exitDate: true,
+} as const;
+
+function withLinkedTrades<T extends { trades: { trade: unknown }[] }>(entry: T) {
+  const { trades, ...rest } = entry;
+  return { ...rest, linkedTrades: trades.map(({ trade }) => trade) };
+}
+
 function getAuthenticatedUserId(request: Request) {
   const auth = getUserIdFromRequest(request);
   if (auth.error) {
@@ -19,11 +33,12 @@ export async function GET(request: Request) {
   if (auth.response) return auth.response;
 
   try {
-    const journalEntries = await prisma.journalEntry.findMany({
+    const entries = await prisma.journalEntry.findMany({
       where: { userId: auth.userId },
       orderBy: { entryDate: 'desc' },
+      include: { trades: { include: { trade: { select: tradeSelect } } } },
     });
-    return NextResponse.json(journalEntries);
+    return NextResponse.json(entries.map(withLinkedTrades));
   } catch (error) {
     console.error('Error fetching journal entries:', error);
     return NextResponse.json({ error: 'Failed to fetch journal entries' }, { status: 500 });
@@ -49,11 +64,7 @@ export async function POST(request: Request) {
           entryDate: data.entryDate,
         },
       },
-      update: {
-        content: data.content,
-        mood: data.mood,
-        confidenceLevel: data.confidenceLevel,
-      },
+      update: { content: data.content, mood: data.mood, confidenceLevel: data.confidenceLevel },
       create: {
         userId: auth.userId,
         entryDate: data.entryDate,
@@ -62,9 +73,10 @@ export async function POST(request: Request) {
         mood: data.mood,
         confidenceLevel: data.confidenceLevel,
       },
+      include: { trades: { include: { trade: { select: tradeSelect } } } },
     });
 
-    return NextResponse.json(entry);
+    return NextResponse.json(withLinkedTrades(entry));
   } catch (error) {
     console.error('Error saving journal entry:', error);
     return NextResponse.json({ error: 'Failed to save journal entry' }, { status: 500 });
