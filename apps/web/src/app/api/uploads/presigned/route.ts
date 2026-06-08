@@ -100,7 +100,14 @@ export async function GET(request: NextRequest) {
   if (!region || !accessKeyId || !secretAccessKey || !bucket) {
     const missing = ['AWS_REGION', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_S3_BUCKET']
       .filter((k) => !process.env[k]);
-    return NextResponse.json({ error: `Missing env vars: ${missing.join(', ')}` }, { status: 500 });
+    const diagnostic = {
+      missing,
+      NODE_ENV: process.env.NODE_ENV,
+      VERCEL_ENV: process.env.VERCEL_ENV,
+      HAS_AUTH_SECRET: !!process.env.AUTH_SECRET,
+      HAS_DATABASE_URL: !!process.env.DATABASE_URL,
+    };
+    return NextResponse.json({ error: `Missing env vars: ${missing.join(', ')}`, diagnostic }, { status: 500 });
   }
 
   const safeFilename = path.basename(filename).replace(/[^a-zA-Z0-9._-]/g, '_');
