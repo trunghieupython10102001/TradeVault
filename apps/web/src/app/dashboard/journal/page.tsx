@@ -259,10 +259,13 @@ export default function JournalPage() {
             <div className={styles.empty}>No {activePeriodType.toLowerCase()} entries yet.</div>
           ) : (
             filteredEntries.map((entry) => {
-              const html = generateHTML(
-                parseContent(entry.content) as Parameters<typeof generateHTML>[0],
-                htmlExtensions
-              );
+              let html = '';
+              try {
+                html = generateHTML(
+                  parseContent(entry.content) as Parameters<typeof generateHTML>[0],
+                  htmlExtensions
+                );
+              } catch { html = '<p><em>Unable to render content</em></p>'; }
               return (
                 <div key={entry.id} className={styles.entryCard}>
                   <div className={styles.entryMeta}>
