@@ -5,14 +5,6 @@ import { randomUUID } from 'crypto';
 import path from 'path';
 import { getUserIdFromRequest } from '@/server/auth/legacy-jwt';
 
-const s3 = new S3Client({
-  region: process.env.AWS_REGION!,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-});
-
 export async function GET(request: NextRequest) {
   const auth = getUserIdFromRequest(request);
   if ('error' in auth) {
@@ -33,19 +25,35 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Filename too long' }, { status: 400 });
   }
 
+  const region = process.env.AWS_REGION;
+  const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+  const bucket = process.env.AWS_S3_BUCKET;
+
+  if (!region || !accessKeyId || !secretAccessKey || !bucket) {
+    const missing = ['AWS_REGION', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_S3_BUCKET']
+      .filter((k) => !process.env[k]);
+    return NextResponse.json({ error: `Missing env vars: ${missing.join(', ')}` }, { status: 500 });
+  }
+
   const safeFilename = path.basename(filename).replace(/[^a-zA-Z0-9._-]/g, '_');
   const ext = safeFilename.split('.').pop() ?? 'png';
   const key = `journal-images/${auth.userId}/${randomUUID()}.${ext}`;
 
+  const s3 = new S3Client({
+    region,
+    credentials: { accessKeyId, secretAccessKey },
+  });
+
   const command = new PutObjectCommand({
-    Bucket: process.env.AWS_S3_BUCKET!,
+    Bucket: bucket,
     Key: key,
     ContentType: contentType,
   });
 
   try {
     const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
-    const publicUrl = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+    const publicUrl = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
     return NextResponse.json({ uploadUrl, publicUrl });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
