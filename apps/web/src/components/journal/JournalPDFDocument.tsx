@@ -38,7 +38,7 @@ const s = StyleSheet.create({
   page: { padding: 40, fontFamily: 'Helvetica', fontSize: 10, color: '#1e293b' },
   header: { marginBottom: 16 },
   period: { fontSize: 18, fontFamily: 'Helvetica-Bold', marginBottom: 6 },
-  meta: { flexDirection: 'row', gap: 16, fontSize: 10, color: '#64748b' },
+  meta: { flexDirection: 'row', columnGap: 16, fontSize: 10, color: '#64748b' },
   divider: { borderBottomWidth: 1, borderBottomColor: '#e2e8f0', marginVertical: 12 },
   body: { marginBottom: 16 },
   p: { marginBottom: 6, lineHeight: 1.5 },
