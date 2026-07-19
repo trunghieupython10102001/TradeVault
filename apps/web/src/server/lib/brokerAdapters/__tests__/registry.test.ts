@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { adapters, detectAdapter, getAdapter } from '..';
 
 describe('broker adapter registry', () => {
-  it('exposes both built-in adapters', () => {
+  it('exposes the built-in adapters', () => {
     const names = adapters.map((a) => a.name).sort();
-    expect(names).toEqual(['exness', 'mt4mt5']);
+    expect(names).toEqual(['exness', 'mt4mt5', 'mt5report']);
   });
 
   it('detects Exness from a lowercase header list', () => {

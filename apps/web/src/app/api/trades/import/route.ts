@@ -4,7 +4,7 @@ import { sqltag as sql, join } from '@prisma/client/runtime/client';
 import { prisma } from '@repo/database';
 import { parseCsv } from '@/server/lib/csvParser';
 import { calculateRMultiple } from '@/server/lib/calculations';
-import { detectAdapter, getAdapter, type NormalizedTrade } from '@/server/lib/brokerAdapters';
+import { detectAdapter, getAdapter, isMt5HistoryReport, extractMt5PositionsCsv, type NormalizedTrade } from '@/server/lib/brokerAdapters';
 import { chunk, getAuthenticatedUserId } from '../helpers';
 
 const IMPORT_BATCH_SIZE = 500;
@@ -54,7 +54,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'CSV content is required' }, { status: 400 });
     }
 
-    const { headers, rows } = parseCsv(csv);
+    // Native MT5 "Trade History Report" exports are multi-section; reduce them
+    // to just the Positions table before the generic CSV pipeline runs.
+    const csvToParse = isMt5HistoryReport(csv) ? extractMt5PositionsCsv(csv) : csv;
+    const { headers, rows } = parseCsv(csvToParse);
     if (rows.length === 0) {
       return NextResponse.json({ error: 'No data rows found in CSV' }, { status: 400 });
     }

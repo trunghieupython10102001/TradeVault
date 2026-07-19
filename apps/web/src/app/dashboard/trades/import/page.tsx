@@ -6,10 +6,11 @@ import { ArrowLeft, Upload, FileText, CheckCircle, AlertCircle, X } from 'lucide
 import Topbar from '@/components/layout/Topbar';
 import styles from './page.module.css';
 
-type BrokerOption = 'auto' | 'mt4mt5' | 'exness';
+type BrokerOption = 'auto' | 'mt4mt5' | 'mt5report' | 'exness';
 
 const BROKER_LABELS: Record<Exclude<BrokerOption, 'auto'>, string> = {
   mt4mt5: 'MT4 / MT5',
+  mt5report: 'MT5 History Report',
   exness: 'Exness',
 };
 
@@ -18,6 +19,10 @@ const BROKER_COLUMNS: Record<Exclude<BrokerOption, 'auto'>, string[]> = {
     'Ticket', 'Open (date)', 'Type (buy/sell)', 'Volume', 'Symbol',
     'Price (entry)', 'SL', 'TP', 'Close (date)', 'Price (exit)',
     'Swap', 'Commissions', 'Profit', 'Pips', 'Duration',
+  ],
+  mt5report: [
+    'Time (open)', 'Position', 'Symbol', 'Type', 'Volume', 'Price (entry)',
+    'S / L', 'T / P', 'Time (close)', 'Price (exit)', 'Commission', 'Swap', 'Profit',
   ],
   exness: [
     'ticket', 'opening_time_utc', 'closing_time_utc', 'type', 'lots', 'symbol',
@@ -142,7 +147,7 @@ export default function ImportTradesPage() {
           </button>
           <h1 className={styles.title}>Import Trades from CSV</h1>
           <p className={styles.subtitle}>
-            Upload a CSV export from your broker. Supported formats: MT4/MT5, Exness.
+            Upload a CSV export from your broker. Supported formats: MT4/MT5, MT5 History Report, Exness.
           </p>
         </div>
 
@@ -156,6 +161,7 @@ export default function ImportTradesPage() {
             >
               <option value="auto">Auto-detect</option>
               <option value="mt4mt5">MT4 / MT5</option>
+              <option value="mt5report">MT5 History Report</option>
               <option value="exness">Exness</option>
             </select>
           </div>
